@@ -4,6 +4,11 @@ use crunchy::unroll;
 
 use byteorder::{BigEndian, ByteOrder};
 
+#[cfg(all(target_os = "zkvm", target_arch = "riscv32"))]
+use core::mem;
+#[cfg(all(target_os = "zkvm", target_arch = "riscv32"))]
+use risc0_bigint2::field;
+
 /// 256-bit, stack allocated biginteger for use in prime field
 /// arithmetic.
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
@@ -277,6 +282,23 @@ impl U256 {
         }
     }
 
+    #[cfg(all(target_os = "zkvm", target_arch = "riscv32"))]
+    /// Add `other` to `self` (mod `modulo`)
+    pub fn add(&mut self, other: &U256, modulo: &U256) {
+        let mut result = [0u32; 8];
+        unsafe {
+            // TODO: Not entirely thrilled about using `transmute` for this, be a bit more deliberate here...
+            // (At a minimum, be clear about endianness)
+            let lhs: [u32; 8] = mem::transmute(self.0);
+            let rhs: [u32; 8] = mem::transmute(other.0);
+            let prime: [u32; 8] = mem::transmute(modulo.0);
+            field::modadd_256(&lhs, &rhs, &prime, &mut result);
+            self.0 = mem::transmute(result);
+        }
+    }
+
+
+    #[cfg(not(all(target_os = "zkvm", target_arch = "riscv32")))]
     /// Add `other` to `self` (mod `modulo`)
     pub fn add(&mut self, other: &U256, modulo: &U256) {
         add_nocarry(&mut self.0, &other.0);

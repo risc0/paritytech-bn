@@ -23,6 +23,16 @@ crunchy = "0.2.1"
 lazy_static = { version = "1.4.0", features = ["spin_no_std"] }
 rustc-hex = { version = "2", default-features = false }
 
+# TODO
+[target.'cfg(all(target_os = "zkvm", target_arch = "riscv32"))'.dependencies]
+risc0-bigint2 = { path = "../../../risc0/risc0/bigint2", features = ["unstable"] }
+
+# TODO: Ideally we'd skip this one
+risc0-zkvm = { path = "../../../risc0/risc0/zkvm", default-features = false, features = [
+  "std",
+  "getrandom",
+] }
+
 [dev-dependencies]
 rand = { version = "0.8.3", features = ["std_rng"] }
 
