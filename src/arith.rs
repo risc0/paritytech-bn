@@ -294,6 +294,7 @@ impl U256 {
             let prime: [u32; 8] = mem::transmute(modulo.0);
             field::modadd_256(&lhs, &rhs, &prime, &mut result);
             self.0 = mem::transmute(result);
+            // TODO: Assert result < prime
         }
     }
 
@@ -308,6 +309,25 @@ impl U256 {
         }
     }
 
+
+    #[cfg(all(target_os = "zkvm", target_arch = "riscv32"))]
+    /// Subtract `other` from `self` (mod `modulo`)
+    pub fn sub(&mut self, other: &U256, modulo: &U256) {
+        let mut result = [0u32; 8];
+        unsafe {
+            // TODO: Not entirely thrilled about using `transmute` for this, be a bit more deliberate here...
+            // (At a minimum, be clear about endianness)
+            let lhs: [u32; 8] = mem::transmute(self.0);
+            let rhs: [u32; 8] = mem::transmute(other.0);
+            let prime: [u32; 8] = mem::transmute(modulo.0);
+            field::modsub_256(&lhs, &rhs, &prime, &mut result);
+            self.0 = mem::transmute(result);
+            // TODO: Assert result < prime
+        }
+    }
+
+
+    #[cfg(not(all(target_os = "zkvm", target_arch = "riscv32")))]
     /// Subtract `other` from `self` (mod `modulo`)
     pub fn sub(&mut self, other: &U256, modulo: &U256) {
         if *self < *other {
