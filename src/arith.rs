@@ -348,22 +348,14 @@ impl U256 {
             assert!(!carry_needed, "Cannot use 0 for modulus in `mul`");
             let mut R_inv = [0u32; 8];
             field::modinv_256(&R, &prime, &mut R_inv);
-            // TODO: Assert R_inv < prime
-
 
             field::modmul_256(&lhs, &rhs, &prime, &mut result);
 
-            // TODO
-            // let inv = U256([inv, 0]);
-            // let inv: [u32; 8] = mem::transmute(inv.0);
             let mut result2 = [0u32; 8];
-            // field::modmul_256(&result, &inv, &prime, &mut result2);
             field::modmul_256(&result, &R_inv, &prime, &mut result2);
             // TODO: Assert result2 < prime
-            // / TODO
 
-            self.0 = mem::transmute(result2);  // TODO
-            // self.0 = mem::transmute(result);
+            self.0 = mem::transmute(result2);  // TODO: naming
         }
     }
 
@@ -856,33 +848,3 @@ fn testing_divrem() {
         assert!(c0 < modulo);
     }
 }
-
-// #[test]
-// fn TODO_mul_test() {
-//     // TODO: This is the behavior we would expect if x.mul(y, p, inv) := (x * y * inv) % p
-//     let mut x: U256 = 3.into();
-//     let y: U256 = 4.into();
-//     let p: U256 = 7.into();
-//     x.mul(&y, &p, 1);
-//     assert_eq!(x, 5.into());
-
-//     let mut x: U256 = 3.into();
-//     x.mul(&y, &p, 2);
-//     assert_eq!(x, 3.into());
-
-//     let mut x: U256 = 3.into();
-//     x.mul(&y, &p, 3);
-//     assert_eq!(x, 1.into());
-
-//     let mut x: U256 = 3.into();
-//     x.mul(&y, &p, 4);
-//     assert_eq!(x, 6.into());
-
-//     let mut x: U256 = 3.into();
-//     x.mul(&y, &p, 5);
-//     assert_eq!(x, 4.into());
-
-//     let mut x: U256 = 3.into();
-//     x.mul(&y, &p, 6);
-//     assert_eq!(x, 2.into());
-// }
