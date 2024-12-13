@@ -341,7 +341,7 @@ impl U256 {
     /// Multiply `self` by `other` (mod `modulo`)
     ///
     /// To match the non-precompile API, this accepts an `inv` parameter, but TODO
-    pub fn mul(&mut self, other: &U256, modulo: &U256, _inv: u128) {
+    pub fn mul(&mut self, other: &U256, modulo: &U256, inv: u128) {
         let mut result = [0u32; 8];
         unsafe {
             // TODO: Not entirely thrilled about using `transmute` for this, be a bit more deliberate here...
@@ -350,22 +350,55 @@ impl U256 {
             let rhs: [u32; 8] = mem::transmute(other.0);
             let prime: [u32; 8] = mem::transmute(modulo.0);
 
+            // TODO: We're assuming R = (2^128)^2 (so b = 2^128, n = 2); verify this against inv?
+            // To do so, we compute m_prime = -prime^(-1) mod 2^128 and confirm it is `inv`
+            let mut neg_modulus_mod_2_218 = [0u32; 8];
+            let mut carry_needed = true;
+            for i in 0..4 {  // mod 2^128, so only need to do least significant half
+                let val = prime[i];
+                neg_modulus_mod_2_218[i] = u32::MAX - val;
+                if carry_needed {
+                    if val == 0 {
+                        // m_prime[i] is zero and we still need to carry
+                        neg_modulus_mod_2_218[i] = 0;
+                        continue;
+                    }
+                    // Otherwise, we are done carrying
+                    neg_modulus_mod_2_218[i] += 1;
+                    carry_needed = false;
+                }
+            }
+            assert!(!carry_needed, "Cannot use a modulus divisible by 2^128 in `mul`");  // TODO: More coverage?
+            let mut m_prime = [0u32; 8];
+            let mut two_128 = [0u32, 0u32, 0u32, 0u32, 1u32, 0u32, 0u32, 0u32];
+            field::modinv_256(&neg_modulus_mod_2_218, &two_128, &mut m_prime);
+            let m_prime: u128 = m_prime[0] as u128 + (1 << 32) * (m_prime[1] as u128) + (1 << 64) * (m_prime[2] as u128) + (1 << 96) * (m_prime[3] as u128);
+            assert_eq!(inv, m_prime);  // Otherwise we have an inconsistency in b^n used in the algorithm
+
+
 
             // TODO: write up explanation of 1000 - 789 = 211 digit-wise algorithm
+            //    TODO: Include case like 1000 - 240 = 760;
             // TODO: Clean up
-            // TODO: Do we need to confirm prime > 2^128?
-            // TODO: We're assuming R = (2^128)^2 (so b = 2^128, n = 2); verify this against inv?
+            // Note: If prime < 2^128 this isn't normalized (i.e. we'll have R > prime), but we are
+            // only using it as an input to a field operation, so it doesn't need to be // TODO: true?
             let mut R = [0u32; 8];  // This gives a representation of 2^256 mod prime, which is R
             let mut carry_needed = true;
             for i in 0..8 {
                 let val = prime[i];
                 R[i] = u32::MAX - val;
-                if carry_needed && val != 0 {
+                if carry_needed {
+                    if val == 0 {
+                        // R[i] is zero and we still need to carry
+                        R[i] = 0;
+                        continue;
+                    }
+                    // Otherwise, we are done carrying
                     R[i] += 1;
                     carry_needed = false;
                 }
             }
-            assert!(!carry_needed, "Cannot use 0 for modulus in `mul`");
+            assert!(!carry_needed, "Cannot use 0 for modulus in `mul`");  // TODO: More coverage?
             let mut R_inv = [0u32; 8];
             field::modinv_256(&R, &prime, &mut R_inv);
 
