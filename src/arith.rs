@@ -338,9 +338,31 @@ impl U256 {
     }
 
     #[cfg(all(target_os = "zkvm", target_arch = "riscv32"))]
+    fn R(modulo: &U256) -> U256 {
+        // Computes 2^256 mod modulo; this is the R value this code uses for Montgomery Form
+        let mut result = U256([0, 0]);
+        let lo_neg = !modulo.0[0];
+        let lo_neg = lo_neg.wrapping_add(1);
+        result.0[0] = lo_neg;
+        let hi_neg = !modulo.0[1];
+        if lo_neg == 0 {
+            // We wrapped, i.e. need to carry
+            result.0[1] = hi_neg.wrapping_add(1);
+            if result.0[1] == 0 {
+                panic!("TODO: what to do if requested mod 0?");
+            }
+        } else {
+            result.0[1] = hi_neg;
+        }
+        return result;
+    }
+
+    #[cfg(all(target_os = "zkvm", target_arch = "riscv32"))]
     /// Multiply `self` by `other` (mod `modulo`)
     ///
-    /// To match the non-precompile API, this accepts an `inv` parameter, but TODO
+    /// To match the non-precompile API, this accepts an `inv` parameter; we don't need it for
+    /// computations, but we do verify that it matches its expected value under the assumption that
+    /// R = (2^128)^2
     pub fn mul(&mut self, other: &U256, modulo: &U256, inv: u128) {
         let mut result = [0u32; 8];
         unsafe {

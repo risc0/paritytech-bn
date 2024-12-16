@@ -3,6 +3,11 @@ use rand::Rng;
 use crate::fields::{const_fq, FieldElement, Fq};
 use crate::arith::{U256, U512};
 
+#[cfg(all(target_os = "zkvm", target_arch = "riscv32"))]
+use core::mem;
+#[cfg(all(target_os = "zkvm", target_arch = "riscv32"))]
+use risc0_bigint2::field;
+
 #[inline]
 fn fq_non_residue() -> Fq {
     // (q - 1) is a quadratic nonresidue in Fq
@@ -133,6 +138,29 @@ impl FieldElement for Fq2 {
 impl Mul for Fq2 {
     type Output = Fq2;
 
+    #[cfg(all(target_os = "zkvm", target_arch = "riscv32"))]
+    fn mul(self, other: Fq2) -> Fq2 {
+        unsafe {
+            // TODO: Not entirely thrilled about using `transmute` for this, be a bit more deliberate here...
+            // (At a minimum, be clear about endianness)
+            let lhs: [[u32; 8]; 2] = [mem::transmute(U256::from(self.c0)), mem::transmute(U256::from(self.c1))];
+            let rhs: [[u32; 8]; 2] = [mem::transmute(U256::from(other.c0)), mem::transmute(U256::from(other.c1))];
+            let irred_poly: [[u32; 8]; 2] = [mem::transmute(U256::from(fq_non_residue())), [0; 8]];
+            // let irred_poly: [[u32; 8]; 2] = [mem::transmute(fq_non_residue()), [0; 8]];
+            let prime: [u32; 8] = mem::transmute(Fq::modulus());
+            let mut result: [[u32; 8]; 2] = [[0; 8]; 2];
+            // TODO: This is the idea, but ... extra factors of R?
+            field::extfieldmul_256(&lhs, &rhs, &irred_poly, &prime, &mut result);
+            // TODO: Probably I could use the existing `from` rather than a transmute here
+                    // panic!("TODO: Deliberate failure with prime: {:?}", prime);  // TODO: Temporary
+            Fq2 {
+                c0: Fq::new(mem::transmute(result[0])).unwrap(),
+                c1: Fq::new(mem::transmute(result[1])).unwrap(),
+            }
+        }
+    }
+
+    #[cfg(not(all(target_os = "zkvm", target_arch = "riscv32")))]
     fn mul(self, other: Fq2) -> Fq2 {
         // Devegili OhEig Scott Dahab
         //     Multiplication and Squaring on Pairing-Friendly Fields.pdf
