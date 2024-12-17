@@ -144,8 +144,11 @@ impl Mul for Fq2 {
             // TODO: Not entirely thrilled about using `transmute` for this, be a bit more deliberate here...
             // (At a minimum, be clear about endianness)
             let lhs: [[u32; 8]; 2] = [mem::transmute(U256::from(self.c0)), mem::transmute(U256::from(self.c1))];
+                    // panic!("TODO: Deliberate failure with lhs: {:?}", lhs);  // TODO: Temporary
             let rhs: [[u32; 8]; 2] = [mem::transmute(U256::from(other.c0)), mem::transmute(U256::from(other.c1))];
+                    // panic!("TODO: Deliberate failure with rhs: {:?}", rhs);  // TODO: Temporary
             let irred_poly: [[u32; 8]; 2] = [mem::transmute(U256::from(fq_non_residue())), [0; 8]];
+                    // panic!("TODO: Deliberate failure with irred_poly: {:?}", irred_poly);  // TODO: Temporary
             // let irred_poly: [[u32; 8]; 2] = [mem::transmute(fq_non_residue()), [0; 8]];
             let prime: [u32; 8] = mem::transmute(Fq::modulus());
             let mut result: [[u32; 8]; 2] = [[0; 8]; 2];
@@ -153,6 +156,7 @@ impl Mul for Fq2 {
             field::extfieldmul_256(&lhs, &rhs, &irred_poly, &prime, &mut result);
             // TODO: Probably I could use the existing `from` rather than a transmute here
                     // panic!("TODO: Deliberate failure with prime: {:?}", prime);  // TODO: Temporary
+                    // panic!("TODO: Deliberate failure with result: {:?}", result);  // TODO: Temporary
             Fq2 {
                 c0: Fq::new(mem::transmute(result[0])).unwrap(),
                 c1: Fq::new(mem::transmute(result[1])).unwrap(),
@@ -272,7 +276,10 @@ fn tnz_simple_square() {
     );
 
     assert_eq!(x1 * x1, x2);
+}
 
+fn tnz_simple_times() {
+    assert_eq!(Fq2::one() * Fq2::one(), Fq2::one());
 }
 
 #[test]
