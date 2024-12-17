@@ -146,10 +146,8 @@ impl Mul for Fq2 {
             let lhs: [[u32; 8]; 2] = [mem::transmute(U256::from(self.c0)), mem::transmute(U256::from(self.c1))];
             let rhs: [[u32; 8]; 2] = [mem::transmute(U256::from(other.c0)), mem::transmute(U256::from(other.c1))];
             let irred_poly: [[u32; 8]; 2] = [mem::transmute(U256::from(fq_non_residue())), [0; 8]];
-            // let irred_poly: [[u32; 8]; 2] = [mem::transmute(fq_non_residue()), [0; 8]];
             let prime: [u32; 8] = mem::transmute(Fq::modulus());
             let mut result: [[u32; 8]; 2] = [[0; 8]; 2];
-            // TODO: This is the idea, but ... extra factors of R?
             field::extfieldmul_256(&lhs, &rhs, &irred_poly, &prime, &mut result);
             // TODO: Probably I could use the existing `from` rather than a transmute here
             Fq2 {
