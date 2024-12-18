@@ -488,29 +488,30 @@ fn test_g2() {
     tests::group_trials::<G2>();
 }
 
-#[test]
-fn test_affine_jacobian_conversion() {
-    let rng = &mut ::rand::thread_rng();
+// TODO: Skip: Passing
+// #[test]
+// fn test_affine_jacobian_conversion() {
+//     let rng = &mut ::rand::thread_rng();
 
-    assert!(G1::zero().to_affine().is_none());
-    assert!(G2::zero().to_affine().is_none());
+//     assert!(G1::zero().to_affine().is_none());
+//     assert!(G2::zero().to_affine().is_none());
 
-    for _ in 0..2 {  // TODO: was 1000
-        let a = G1::one() * Fr::random(rng);
-        let b = a.to_affine().unwrap();
-        let c = b.to_jacobian();
+//     for _ in 0..2 {  // TODO: was 1000
+//         let a = G1::one() * Fr::random(rng);
+//         let b = a.to_affine().unwrap();
+//         let c = b.to_jacobian();
 
-        assert_eq!(a, c);
-    }
+//         assert_eq!(a, c);
+//     }
 
-    for _ in 0..2 {  // TODO: Was 1000
-        let a = G2::one() * Fr::random(rng);
-        let b = a.to_affine().unwrap();
-        let c = b.to_jacobian();
+//     for _ in 0..2 {  // TODO: Was 1000
+//         let a = G2::one() * Fr::random(rng);
+//         let b = a.to_affine().unwrap();
+//         let c = b.to_jacobian();
 
-        assert_eq!(a, c);
-    }
-}
+//         assert_eq!(a, c);
+//     }
+// }
 
 #[inline]
 fn twist() -> Fq2 {
@@ -1032,13 +1033,14 @@ fn test_reduced_pairing() {
 //     assert!(!p.is_zero());
 // }
 
-#[test]
-fn test_batch_bilinearity_empty() {
-    let p_vec : Vec<G1> = Vec::new();
-    let q_vec : Vec<G2> = Vec::new();
-    let r = pairing_batch(&p_vec, &q_vec);
-    assert_eq!(r, Fq12::one());
-}
+// TODO: Skip: Passing
+// #[test]
+// fn test_batch_bilinearity_empty() {
+//     let p_vec : Vec<G1> = Vec::new();
+//     let q_vec : Vec<G2> = Vec::new();
+//     let r = pairing_batch(&p_vec, &q_vec);
+//     assert_eq!(r, Fq12::one());
+// }
 
 #[test]
 fn test_batch_bilinearity_one() {

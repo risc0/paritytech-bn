@@ -233,6 +233,7 @@ mod tests;
 //     assert_eq!(finally, next);
 // }
 
+// TODO: Note: a little bit slow
 // TODO: Skip: Passing
 // #[test]
 // fn test_cyclotomic_exp() {
