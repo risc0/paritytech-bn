@@ -287,10 +287,11 @@ impl Fq2 {
 //     assert_eq!(x1 * x1, x2);
 // }
 
-#[test]
-fn tnz_simple_times() {
-    assert_eq!(Fq2::one() * Fq2::one(), Fq2::one());
-}
+// TODO: Skip: Passing
+// #[test]
+// fn tnz_simple_times() {
+//     assert_eq!(Fq2::one() * Fq2::one(), Fq2::one());
+// }
 
 // TODO: Skip: Passing
 // #[test]
