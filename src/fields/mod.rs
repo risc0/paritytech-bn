@@ -91,6 +91,7 @@ fn test_fq6() {
 }
 
 // TODO: Skip: Passing
+// TODO: Note: A little slow
 #[test]
 fn test_fq12() {
     tests::field_trials::<Fq12>();

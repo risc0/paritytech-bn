@@ -1041,6 +1041,7 @@ fn test_batch_bilinearity_empty() {
     assert_eq!(r, Fq12::one());
 }
 
+// TODO: Note: A little slow
 #[test]
 fn test_batch_bilinearity_one() {
     use rand::{SeedableRng, rngs::StdRng};
