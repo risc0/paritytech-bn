@@ -97,6 +97,7 @@ fn test_fq12() {
 }
 
 // TODO: Skip: Passing
+// TODO: Note: A little slow
 #[test]
 fn fq12_test_vector() {
     let start = Fq12::new(
