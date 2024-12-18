@@ -178,7 +178,7 @@ macro_rules! field_impl {
 
 #[cfg(all(target_os = "zkvm", target_arch = "riscv32"))]
 macro_rules! field_impl {
-    ($name:ident, $modulus:expr, $rsquared:expr, $rcubed:expr, $one:expr, $inv:expr) => {
+    ($name:ident, $modulus:expr, $rsquared:expr, $rcubed:expr, $one:expr, $inv:expr, $r:expr, $rinv:expr) => {
         #[derive(Copy, Clone, PartialEq, Eq, Debug)]
         #[repr(C)]
         pub struct $name(U256);
@@ -233,15 +233,11 @@ macro_rules! field_impl {
             }
 
             fn R() -> Self {
-                // TODO: Compute only once?
-                // Computes 2^256 mod modulo; this is the R value this code uses for Montgomery Form
-                assert_ne!(Self::modulus().0[0], 0);
-                Self(U256([(!Self::modulus().0[0]) + 1, !Self::modulus().0[1]]))
+                Self(U256::from($r))
             }
 
             fn R_inv() -> Self {
-                // TODO: Compute only once?
-                Self::R().inverse().unwrap()
+                Self(U256::from($rinv))
             }
 
             pub fn to_montgomery(mut self) -> Self {
@@ -371,6 +367,7 @@ macro_rules! field_impl {
     }
 }
 
+#[cfg(not(all(target_os = "zkvm", target_arch = "riscv32")))]
 field_impl!(
     Fr,
     [
@@ -400,6 +397,7 @@ field_impl!(
     0x6586864b4c6911b3c2e1f593efffffff
 );
 
+#[cfg(not(all(target_os = "zkvm", target_arch = "riscv32")))]
 field_impl!(
     Fq,
     [
@@ -427,6 +425,90 @@ field_impl!(
         0xe0a77c19a07df2f
     ],
     0x9ede7d651eca6ac987d20782e4866389
+);
+
+#[cfg(all(target_os = "zkvm", target_arch = "riscv32"))]
+field_impl!(
+    Fr,
+    [
+        0x43e1f593f0000001,
+        0x2833e84879b97091,
+        0xb85045b68181585d,
+        0x30644e72e131a029
+    ],
+    [
+        0x1bb8e645ae216da7,
+        0x53fe3ab1e35c59e3,
+        0x8c49833d53bb8085,
+        0x0216d0b17f4e44a5
+    ],
+    [
+        0x5e94d8e1b4bf0040,
+        0x2a489cbe1cfbb6b8,
+        0x893cc664a19fcfed,
+        0x0cf8594b7fcc657c
+    ],
+    [
+        0xac96341c4ffffffb,
+        0x36fc76959f60cd29,
+        0x666ea36f7879462e,
+        0xe0a77c19a07df2f
+    ],
+    0x6586864b4c6911b3c2e1f593efffffff,
+    [
+        0xBC1E0A6C0FFFFFFF,
+        0xD7CC17B786468F6E,
+        0x47AFBA497E7EA7A2,
+        0xCF9BB18D1ECE5FD6,
+    ],
+    [
+        0xDC5BA0056DB1194E,
+        0x090EF5A9E111EC87,
+        0xC8260DE4AEB85D5D,
+        0x15EBF95182C5551C,
+    ]
+);
+
+#[cfg(all(target_os = "zkvm", target_arch = "riscv32"))]
+field_impl!(
+    Fq,
+    [
+        0x3c208c16d87cfd47,
+        0x97816a916871ca8d,
+        0xb85045b68181585d,
+        0x30644e72e131a029
+    ],
+    [
+        0xf32cfc5b538afa89,
+        0xb5e71911d44501fb,
+        0x47ab1eff0a417ff6,
+        0x06d89f71cab8351f
+    ],
+    [
+        0xb1cd6dafda1530df,
+        0x62f210e6a7283db6,
+        0xef7f0b0c0ada0afb,
+        0x20fd6e902d592544
+    ],
+    [
+        0xd35d438dc58f0d9d,
+        0xa78eb28f5c70b3d,
+        0x666ea36f7879462c,
+        0xe0a77c19a07df2f
+    ],
+    0x9ede7d651eca6ac987d20782e4866389,
+    [
+        0xC3DF73E9278302B9,
+        0x687E956E978E3572,
+        0x47AFBA497E7EA7A2,
+        0xCF9BB18D1ECE5FD6,
+    ],
+    [
+        0xED84884A014AFA37,
+        0xEB2022850278EDF8,
+        0xCF63E9CFB74492D9,
+        0x2E67157159E5C639,
+    ]
 );
 
 lazy_static::lazy_static! {
