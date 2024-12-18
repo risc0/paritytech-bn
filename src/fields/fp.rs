@@ -93,22 +93,28 @@ macro_rules! field_impl {
 
             #[cfg(all(target_os = "zkvm", target_arch = "riscv32"))]
             fn R() -> Self {
+                // TODO: Compute only once?
                 // Computes 2^256 mod modulo; this is the R value this code uses for Montgomery Form
                 assert_ne!(Self::modulus().0[0], 0);
                 Self(U256([(!Self::modulus().0[0]) + 1, !Self::modulus().0[1]]))
             }
 
-            // TODO
+            #[cfg(all(target_os = "zkvm", target_arch = "riscv32"))]
+            fn R_inv() -> Self {
+                // TODO: Compute only once?
+                Self::R().inverse().unwrap()
+            }
+
             #[cfg(all(target_os = "zkvm", target_arch = "riscv32"))]
             pub fn to_montgomery(mut self) -> Self {
                 self.mul(Self::R())
             }
 
-            // // TODO
-            // #[cfg(all(target_os = "zkvm", target_arch = "riscv32"))]
-            // pub fn from_montgomery(mut self) -> Self {
-            //     self.mul(TODO, Self::R_inv())
-            // }
+            // TODO
+            #[cfg(all(target_os = "zkvm", target_arch = "riscv32"))]
+            pub fn from_montgomery(mut self) -> Self {
+                self.mul(Self::R_inv())
+            }
 
             #[cfg(not(all(target_os = "zkvm", target_arch = "riscv32")))]
             pub fn interpret(buf: &[u8; 64]) -> Self {
@@ -118,7 +124,7 @@ macro_rules! field_impl {
             // TODO: What is this?
             #[cfg(all(target_os = "zkvm", target_arch = "riscv32"))]
             pub fn interpret(buf: &[u8; 64]) -> Self {
-                unimplemented!();
+                unimplemented!("TODO: What is this? `interpret`");
             }
 
             /// Returns the modulus
@@ -142,8 +148,12 @@ macro_rules! field_impl {
 
             #[cfg(all(target_os = "zkvm", target_arch = "riscv32"))]
             pub fn raw(&self) -> &U256 {
-                // TODO: This needs to be to-montgomery
-                unimplemented!();
+                unimplemented!("There is no `raw` Montgomery representation; consider `raw_nonmont`");
+            }
+
+            #[cfg(all(target_os = "zkvm", target_arch = "riscv32"))]
+            pub fn raw_nonmont(&self) -> &U256 {
+                &self.0
             }
 
             #[cfg(not(all(target_os = "zkvm", target_arch = "riscv32")))]
@@ -154,7 +164,7 @@ macro_rules! field_impl {
             #[cfg(all(target_os = "zkvm", target_arch = "riscv32"))]
             pub fn set_bit(&mut self, bit: usize, to: bool) {
                 // TODO: Maintaining set_bit semantics is annoying
-                unimplemented!();
+                unimplemented!("TODO: Maitaining `set_bit` semantics is annoying");
             }
         }
 
@@ -366,34 +376,34 @@ pub fn const_fq(i: [u64; 4]) -> Fq {
     Fq(U256::from(i))
 }
 
-// TODO: Since this is writing a raw value, need it to be build-specific
+// TODO: Add a variant of this that reads raw non-Montgomery bytes
 #[cfg(all(target_os = "zkvm", target_arch = "riscv32"))]
 #[inline]
 pub fn const_fq(i: [u64; 4]) -> Fq {
-    // TODO: Here
-    Fq(U256::from(i))
+    // The semantics assume the input is in Montgomery form, but we don't use Montgomery form internally
+    Fq(U256::from(i)).from_montgomery()
 }
 
-// #[test]
-// fn test_rsquared() {
-//     let rng = &mut ::rand::thread_rng();
+#[test]
+fn test_rsquared() {
+    let rng = &mut ::rand::thread_rng();
 
-//     for _ in 0..1000 {
-//         let a = Fr::random(rng);
-//         let b: U256 = a.into();
-//         let c = Fr::new(b).unwrap();
+    for _ in 0..2 {  // TODO: From 1000
+        let a = Fr::random(rng);
+        let b: U256 = a.into();
+        let c = Fr::new(b).unwrap();
 
-//         assert_eq!(a, c);
-//     }
+        assert_eq!(a, c);
+    }
 
-//     for _ in 0..1000 {
-//         let a = Fq::random(rng);
-//         let b: U256 = a.into();
-//         let c = Fq::new(b).unwrap();
+    for _ in 0..2 {  // TODO: From 1000
+        let a = Fq::random(rng);
+        let b: U256 = a.into();
+        let c = Fq::new(b).unwrap();
 
-//         assert_eq!(a, c);
-//     }
-// }
+        assert_eq!(a, c);
+    }
+}
 
 #[test]
 fn tnz_simple_square() {
@@ -414,11 +424,11 @@ fn tnz_basic_mul() {
     assert_eq!(U256::from(two * three), U256::from(6u64));
 }
 
-// #[test]
-// fn sqrt_fq() {
-//     // from zcash test_proof.cpp
-//     let fq1 = Fq::from_str("5204065062716160319596273903996315000119019512886596366359652578430118331601").unwrap();
-//     let fq2 = Fq::from_str("348579348568").unwrap();
+#[test]
+fn sqrt_fq() {
+    // from zcash test_proof.cpp
+    let fq1 = Fq::from_str("5204065062716160319596273903996315000119019512886596366359652578430118331601").unwrap();
+    let fq2 = Fq::from_str("348579348568").unwrap();
 
-//     assert_eq!(fq1, fq2.sqrt().expect("348579348568 is quadratic residue"));
-// }
+    assert_eq!(fq1, fq2.sqrt().expect("348579348568 is quadratic residue"));
+}

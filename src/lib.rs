@@ -47,9 +47,18 @@ impl Fr {
             .map_err(|_| FieldError::InvalidSliceLength) // todo: maybe more sensful error handling
             .map(|x| Fr::new_mul_factor(x))
     }
+    #[cfg(not(all(target_os = "zkvm", target_arch = "riscv32")))]
     pub fn to_big_endian(&self, slice: &mut [u8]) -> Result<(), FieldError> {
         self.0
             .raw()
+            .to_big_endian(slice)
+            .map_err(|_| FieldError::InvalidSliceLength)
+    }
+    #[cfg(all(target_os = "zkvm", target_arch = "riscv32"))]
+    pub fn to_big_endian(&self, slice: &mut [u8]) -> Result<(), FieldError> {
+        // TODO: Does this rewrite anything? Add a test for if this mutates self (and just regular testing too)
+        let mont = self.0.to_montgomery();
+        mont.raw()
             .to_big_endian(slice)
             .map_err(|_| FieldError::InvalidSliceLength)
     }
@@ -157,6 +166,7 @@ impl Fq {
             .and_then(|x| fields::Fq::new(x).ok_or(FieldError::NotMember))
             .map(|x| Fq(x))
     }
+    #[cfg(not(all(target_os = "zkvm", target_arch = "riscv32")))]
     pub fn to_big_endian(&self, slice: &mut [u8]) -> Result<(), FieldError> {
         let mut a: arith::U256 = self.0.into();
         // convert from Montgomery representation
@@ -165,6 +175,13 @@ impl Fq {
             &fields::Fq::modulus(),
             self.0.inv(),
         );
+        a.to_big_endian(slice)
+            .map_err(|_| FieldError::InvalidSliceLength)
+    }
+    #[cfg(all(target_os = "zkvm", target_arch = "riscv32"))]
+    pub fn to_big_endian(&self, slice: &mut [u8]) -> Result<(), FieldError> {
+        // TODO: Test code
+        let mut a: arith::U256 = self.0.into();
         a.to_big_endian(slice)
             .map_err(|_| FieldError::InvalidSliceLength)
     }

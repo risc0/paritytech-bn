@@ -54,10 +54,10 @@ fn test_fr() {
     tests::field_trials::<Fr>();
 }
 
-// #[test]
-// fn test_fq() {
-//     tests::field_trials::<Fq>();
-// }
+#[test]
+fn test_fq() {
+    tests::field_trials::<Fq>();
+}
 
 #[test]
 fn test_fq2() {
