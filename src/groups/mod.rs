@@ -999,38 +999,38 @@ fn test_reduced_pairing() {
 }
 
 // TODO: Skip: Passing
-// #[test]
-// fn predefined_pair() {
-//     let g1 = AffineG1::new(
-//         Fq::from_str("1").expect("Fq(1) should exist"),
-//         Fq::from_str("2").expect("Fq(2) should exist"),
-//     ).expect("Point (1,2) should exist in G1")
-//         .to_jacobian();
+#[test]
+fn predefined_pair() {
+    let g1 = AffineG1::new(
+        Fq::from_str("1").expect("Fq(1) should exist"),
+        Fq::from_str("2").expect("Fq(2) should exist"),
+    ).expect("Point (1,2) should exist in G1")
+        .to_jacobian();
 
-//     let g2 = AffineG2::new(
-//         Fq2::new(
-//             Fq::from_str("10857046999023057135944570762232829481370756359578518086990519993285655852781")
-//                 .expect("a-coeff of g2 x generator is of the right order"),
-//             Fq::from_str("11559732032986387107991004021392285783925812861821192530917403151452391805634")
-//                 .expect("b-coeff of g2 x generator is of the right order"),
-//         ),
-//         Fq2::new(
-//             Fq::from_str("8495653923123431417604973247489272438418190587263600148770280649306958101930")
-//                 .expect("a-coeff of g2 y generator is of the right order"),
-//             Fq::from_str("4082367875863433681332203403145435568316851327593401208105741076214120093531")
-//                 .expect("b-coeff of g2 y generator is of the right order"),
-//         ),
-//     ).expect("Point(11559732032986387107991004021392285783925812861821192530917403151452391805634 * i + 10857046999023057135944570762232829481370756359578518086990519993285655852781, 4082367875863433681332203403145435568316851327593401208105741076214120093531 * i + 8495653923123431417604973247489272438418190587263600148770280649306958101930) is a valid generator for G2")
-//         .to_jacobian();
+    let g2 = AffineG2::new(
+        Fq2::new(
+            Fq::from_str("10857046999023057135944570762232829481370756359578518086990519993285655852781")
+                .expect("a-coeff of g2 x generator is of the right order"),
+            Fq::from_str("11559732032986387107991004021392285783925812861821192530917403151452391805634")
+                .expect("b-coeff of g2 x generator is of the right order"),
+        ),
+        Fq2::new(
+            Fq::from_str("8495653923123431417604973247489272438418190587263600148770280649306958101930")
+                .expect("a-coeff of g2 y generator is of the right order"),
+            Fq::from_str("4082367875863433681332203403145435568316851327593401208105741076214120093531")
+                .expect("b-coeff of g2 y generator is of the right order"),
+        ),
+    ).expect("Point(11559732032986387107991004021392285783925812861821192530917403151452391805634 * i + 10857046999023057135944570762232829481370756359578518086990519993285655852781, 4082367875863433681332203403145435568316851327593401208105741076214120093531 * i + 8495653923123431417604973247489272438418190587263600148770280649306958101930) is a valid generator for G2")
+        .to_jacobian();
 
-//     let p = pairing(&g1, &g2);
+    let p = pairing(&g1, &g2);
 
-//     let g1_vec : Vec<G1> = vec![g1, g1];
-//     let g2_vec : Vec<G2> = vec![g2, g2];
-//     let p2 = pairing_batch(&g1_vec, &g2_vec);
-//     assert!(!p2.is_zero());
-//     assert!(!p.is_zero());
-// }
+    let g1_vec : Vec<G1> = vec![g1, g1];
+    let g2_vec : Vec<G2> = vec![g2, g2];
+    let p2 = pairing_batch(&g1_vec, &g2_vec);
+    assert!(!p2.is_zero());
+    assert!(!p.is_zero());
+}
 
 #[test]
 fn test_batch_bilinearity_empty() {
@@ -1125,37 +1125,37 @@ fn test_bilinearity() {
 }
 
 // TODO: Skip: Passing
-// #[test]
-// fn internals() {
-//     let test_p = G1::one();
+#[test]
+fn internals() {
+    let test_p = G1::one();
 
-//     let val = G1::new(test_p.x().clone(), test_p.y().clone(), test_p.z().clone());
+    let val = G1::new(test_p.x().clone(), test_p.y().clone(), test_p.z().clone());
 
-//     let affine = val.to_affine()
-//         .expect("There should be affine coords for (0, 0)");
+    let affine = val.to_affine()
+        .expect("There should be affine coords for (0, 0)");
 
-//     assert_eq!(affine.x(), &Fq::one());
-// }
-
-// TODO: Skip: Passing
-// #[test]
-// fn affine_fail() {
-//     let res = AffineG1::new(Fq::one(), Fq::one());
-//     assert!(
-//         res.is_err(),
-//         "Affine initialization should fail because the point is not on curve"
-//     );
-// }
+    assert_eq!(affine.x(), &Fq::one());
+}
 
 // TODO: Skip: Passing
-// #[test]
-// fn affine_ok() {
-//     let res = AffineG1::new(Fq::one(), G1Params::coeff_b());
-//     assert!(
-//         res.is_err(),
-//         "Affine initialization should be ok because the point is on the curve"
-//     );
-// }
+#[test]
+fn affine_fail() {
+    let res = AffineG1::new(Fq::one(), Fq::one());
+    assert!(
+        res.is_err(),
+        "Affine initialization should fail because the point is not on curve"
+    );
+}
+
+// TODO: Skip: Passing
+#[test]
+fn affine_ok() {
+    let res = AffineG1::new(Fq::one(), G1Params::coeff_b());
+    assert!(
+        res.is_err(),
+        "Affine initialization should be ok because the point is on the curve"
+    );
+}
 
 #[test]
 fn test_y_at_point_at_infinity() {
