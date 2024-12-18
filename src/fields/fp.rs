@@ -7,6 +7,7 @@ use crate::arith::{U256, U512};
 #[cfg(all(target_os = "zkvm", target_arch = "riscv32"))]
 use risc0_bigint2::field;
 
+#[cfg(not(all(target_os = "zkvm", target_arch = "riscv32")))]
 macro_rules! field_impl {
     ($name:ident, $modulus:expr, $rsquared:expr, $rcubed:expr, $one:expr, $inv:expr) => {
         #[derive(Copy, Clone, PartialEq, Eq, Debug)]
@@ -32,7 +33,6 @@ macro_rules! field_impl {
 
         impl $name {
             pub fn from_str(s: &str) -> Option<Self> {
-                // TODO: Could make a little more efficient in the zkVM, but ... why bother?
                 let ints: Vec<_> = {
                     let mut acc = Self::zero();
                     (0..11).map(|_| {let tmp = acc; acc = acc + Self::one(); tmp}).collect()
@@ -55,7 +55,6 @@ macro_rules! field_impl {
             }
 
             /// Converts a U256 to an Fp so long as it's below the modulus.
-            #[cfg(not(all(target_os = "zkvm", target_arch = "riscv32")))]
             pub fn new(mut a: U256) -> Option<Self> {
                 if a < U256::from($modulus) {
                     a.mul(&U256::from($rsquared), &U256::from($modulus), $inv);
@@ -66,65 +65,14 @@ macro_rules! field_impl {
                 }
             }
 
-            /// Converts a U256 to an Fp so long as it's below the modulus.
-            #[cfg(all(target_os = "zkvm", target_arch = "riscv32"))]
-            pub fn new(mut a: U256) -> Option<Self> {
-                if a < U256::from($modulus) {
-                    Some($name(a))
-                } else {
-                    None
-                }
-            }
-
             /// Converts a U256 to an Fr regardless of modulus.
-            #[cfg(not(all(target_os = "zkvm", target_arch = "riscv32")))]
             pub fn new_mul_factor(mut a: U256) -> Self {
                 a.mul(&U256::from($rsquared), &U256::from($modulus), $inv);
                 $name(a)
             }
 
-            /// Converts a U256 to an Fr regardless of modulus.
-            #[cfg(all(target_os = "zkvm", target_arch = "riscv32"))]
-            pub fn new_mul_factor(mut a: U256) -> Self {
-                // TODO: There's probably a more performant approach, but this should be tiny regardless
-                a.mul(&U256::from(1u64), &U256::from($modulus), $inv);
-                $name(a)
-            }
-
-            #[cfg(all(target_os = "zkvm", target_arch = "riscv32"))]
-            fn R() -> Self {
-                // TODO: Compute only once?
-                // Computes 2^256 mod modulo; this is the R value this code uses for Montgomery Form
-                assert_ne!(Self::modulus().0[0], 0);
-                Self(U256([(!Self::modulus().0[0]) + 1, !Self::modulus().0[1]]))
-            }
-
-            #[cfg(all(target_os = "zkvm", target_arch = "riscv32"))]
-            fn R_inv() -> Self {
-                // TODO: Compute only once?
-                Self::R().inverse().unwrap()
-            }
-
-            #[cfg(all(target_os = "zkvm", target_arch = "riscv32"))]
-            pub fn to_montgomery(mut self) -> Self {
-                self.mul(Self::R())
-            }
-
-            // TODO
-            #[cfg(all(target_os = "zkvm", target_arch = "riscv32"))]
-            pub fn from_montgomery(mut self) -> Self {
-                self.mul(Self::R_inv())
-            }
-
-            #[cfg(not(all(target_os = "zkvm", target_arch = "riscv32")))]
             pub fn interpret(buf: &[u8; 64]) -> Self {
                 $name::new(U512::interpret(buf).divrem(&U256::from($modulus)).1).unwrap()
-            }
-
-            // TODO: What is this?
-            #[cfg(all(target_os = "zkvm", target_arch = "riscv32"))]
-            pub fn interpret(buf: &[u8; 64]) -> Self {
-                unimplemented!("TODO: What is this? `interpret`");
             }
 
             /// Returns the modulus
@@ -141,30 +89,12 @@ macro_rules! field_impl {
                 $inv
             }
 
-            #[cfg(not(all(target_os = "zkvm", target_arch = "riscv32")))]
             pub fn raw(&self) -> &U256 {
                 &self.0
             }
 
-            #[cfg(all(target_os = "zkvm", target_arch = "riscv32"))]
-            pub fn raw(&self) -> &U256 {
-                unimplemented!("There is no `raw` Montgomery representation; consider `raw_nonmont`");
-            }
-
-            #[cfg(all(target_os = "zkvm", target_arch = "riscv32"))]
-            pub fn raw_nonmont(&self) -> &U256 {
-                &self.0
-            }
-
-            #[cfg(not(all(target_os = "zkvm", target_arch = "riscv32")))]
             pub fn set_bit(&mut self, bit: usize, to: bool) {
                 self.0.set_bit(bit, to);
-            }
-
-            #[cfg(all(target_os = "zkvm", target_arch = "riscv32"))]
-            pub fn set_bit(&mut self, bit: usize, to: bool) {
-                // TODO: Maintaining set_bit semantics is annoying
-                unimplemented!("TODO: Maitaining `set_bit` semantics is annoying");
             }
         }
 
@@ -174,19 +104,11 @@ macro_rules! field_impl {
                 $name(U256::from([0, 0, 0, 0]))
             }
 
-            #[cfg(not(all(target_os = "zkvm", target_arch = "riscv32")))]
             #[inline]
             fn one() -> Self {
                 $name(U256::from($one))
             }
 
-            #[cfg(all(target_os = "zkvm", target_arch = "riscv32"))]
-            #[inline]
-            fn one() -> Self {
-                $name(U256::from([1, 0, 0, 0]))
-            }
-
-            // TODO: Does it matter that we get different random numbers (Montgomery vs. not)?
             fn random<R: Rng>(rng: &mut R) -> Self {
                 $name(U256::random(rng, &U256::from($modulus)))
             }
@@ -196,7 +118,6 @@ macro_rules! field_impl {
                 self.0.is_zero()
             }
 
-            #[cfg(not(all(target_os = "zkvm", target_arch = "riscv32")))]
             fn inverse(mut self) -> Option<Self> {
                 if self.is_zero() {
                     None
@@ -204,16 +125,6 @@ macro_rules! field_impl {
                     self.0.invert(&U256::from($modulus));
                     self.0.mul(&U256::from($rcubed), &U256::from($modulus), $inv);
 
-                    Some(self)
-                }
-            }
-
-            #[cfg(all(target_os = "zkvm", target_arch = "riscv32"))]
-            fn inverse(mut self) -> Option<Self> {
-                if self.is_zero() {
-                    None
-                } else {
-                    self.0.invert(&U256::from($modulus));
                     Some(self)
                 }
             }
@@ -244,17 +155,202 @@ macro_rules! field_impl {
         impl Mul for $name {
             type Output = $name;
 
-            #[cfg(not(all(target_os = "zkvm", target_arch = "riscv32")))]
             #[inline]
             fn mul(mut self, other: $name) -> $name {
                 self.0.mul(&other.0, &U256::from($modulus), $inv);
 
                 self
             }
+        }
 
-            #[cfg(all(target_os = "zkvm", target_arch = "riscv32"))]
+        impl Neg for $name {
+            type Output = $name;
+
+            #[inline]
+            fn neg(mut self) -> $name {
+                self.0.neg(&U256::from($modulus));
+
+                self
+            }
+        }
+    }
+}
+
+#[cfg(all(target_os = "zkvm", target_arch = "riscv32"))]
+macro_rules! field_impl {
+    ($name:ident, $modulus:expr, $rsquared:expr, $rcubed:expr, $one:expr, $inv:expr) => {
+        #[derive(Copy, Clone, PartialEq, Eq, Debug)]
+        #[repr(C)]
+        pub struct $name(U256);
+
+
+        impl From<$name> for U256 {
+            #[inline]
+            fn from(mut a: $name) -> Self {
+                // TODO: Note: Can skip mul b/c raw form is simpler in zkvm
+                a.0
+            }
+        }
+
+        impl $name {
+            pub fn from_str(s: &str) -> Option<Self> {
+                // TODO: Same as base. Could make a little more efficient in the zkVM, but ... why bother?
+                let ints: Vec<_> = {
+                    let mut acc = Self::zero();
+                    (0..11).map(|_| {let tmp = acc; acc = acc + Self::one(); tmp}).collect()
+                };
+
+                let mut res = Self::zero();
+                for c in s.chars() {
+                    match c.to_digit(10) {
+                        Some(d) => {
+                            res = res * ints[10];
+                            res = res + ints[d as usize];
+                        },
+                        None => {
+                            return None;
+                        }
+                    }
+                }
+
+                Some(res)
+            }
+
+            pub fn new(mut a: U256) -> Option<Self> {
+                // TODO: Note: This is the simpler zkVM case
+                if a < U256::from($modulus) {
+                    Some($name(a))
+                } else {
+                    None
+                }
+            }
+
+            pub fn new_mul_factor(mut a: U256) -> Self {
+                // TODO: Note this is the simpler zkVM case
+                // TODO: There's probably a more performant approach, but this should be tiny regardless
+                a.mul(&U256::from(1u64), &U256::from($modulus), $inv);
+                $name(a)
+            }
+
+            fn R() -> Self {
+                // TODO: Compute only once?
+                // Computes 2^256 mod modulo; this is the R value this code uses for Montgomery Form
+                assert_ne!(Self::modulus().0[0], 0);
+                Self(U256([(!Self::modulus().0[0]) + 1, !Self::modulus().0[1]]))
+            }
+
+            fn R_inv() -> Self {
+                // TODO: Compute only once?
+                Self::R().inverse().unwrap()
+            }
+
+            pub fn to_montgomery(mut self) -> Self {
+                self.mul(Self::R())
+            }
+
+            pub fn from_montgomery(mut self) -> Self {
+                self.mul(Self::R_inv())
+            }
+
+            pub fn interpret(buf: &[u8; 64]) -> Self {
+                // TODO: What is this?
+                unimplemented!("TODO: What is this? `interpret`");
+            }
+
+            /// Returns the modulus
+            #[inline]
+            #[allow(dead_code)]
+            pub fn modulus() -> U256 {
+                // TODO: Note: Same as base case
+                U256::from($modulus)
+            }
+
+            #[inline]
+            #[allow(dead_code)]
+            pub fn inv(&self) -> u128 {
+                // TODO: Pretty pointless in the zkVM but I guess why not. Note: same as base case
+                $inv
+            }
+
+            pub fn raw(&self) -> &U256 {
+                unimplemented!("There is no `raw` Montgomery representation; consider `raw_nonmont`");
+            }
+
+            pub fn raw_nonmont(&self) -> &U256 {
+                &self.0
+            }
+
+            pub fn set_bit(&mut self, bit: usize, to: bool) {
+                // TODO: Maintaining set_bit semantics is annoying
+                unimplemented!("TODO: Maitaining `set_bit` semantics is annoying");
+            }
+        }
+
+        impl FieldElement for $name {
+            #[inline]
+            fn zero() -> Self {
+                // TODO: Note: Same as base case
+                $name(U256::from([0, 0, 0, 0]))
+            }
+
+            #[inline]
+            fn one() -> Self {
+                // TODO: Note: Simpler than base case
+                $name(U256::from([1, 0, 0, 0]))
+            }
+
+            // TODO: Does it matter that we get different random numbers (Montgomery vs. not)?
+            fn random<R: Rng>(rng: &mut R) -> Self {
+                $name(U256::random(rng, &U256::from($modulus)))
+            }
+
+            #[inline]
+            fn is_zero(&self) -> bool {
+                // TODO: Note: Same as base case
+                self.0.is_zero()
+            }
+
+            fn inverse(mut self) -> Option<Self> {
+                // TODO: Note: Simpler than base case
+                if self.is_zero() {
+                    None
+                } else {
+                    self.0.invert(&U256::from($modulus));
+                    Some(self)
+                }
+            }
+        }
+
+        impl Add for $name {
+            type Output = $name;
+
+            #[inline]
+            fn add(mut self, other: $name) -> $name {
+                // TODO: Note: Same as base case
+                self.0.add(&other.0, &U256::from($modulus));
+
+                self
+            }
+        }
+
+        impl Sub for $name {
+            type Output = $name;
+
+            #[inline]
+            fn sub(mut self, other: $name) -> $name {
+                // TODO: Note: Simpler than base case
+                self.0.sub(&other.0, &U256::from($modulus));
+
+                self
+            }
+        }
+
+        impl Mul for $name {
+            type Output = $name;
+
             #[inline]
             fn mul(mut self, other: $name) -> $name {
+                // TODO: Note: Simpler than base case
                 self.0.modmul(&other.0, &U256::from($modulus));
 
                 self
@@ -266,6 +362,7 @@ macro_rules! field_impl {
 
             #[inline]
             fn neg(mut self) -> $name {
+                // TODO: Note: Same as base case
                 self.0.neg(&U256::from($modulus));
 
                 self
