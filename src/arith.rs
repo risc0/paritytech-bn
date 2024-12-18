@@ -480,6 +480,21 @@ impl U256 {
         self.0[0] & 1 == 0
     }
 
+    #[cfg(all(target_os = "zkvm", target_arch = "riscv32"))]
+    /// Turn `self` into its multiplicative inverse (mod `modulo`)
+    pub fn invert(&mut self, modulo: &U256) {
+        // TODO: Not entirely thrilled about using `transmute` for this, be a bit more deliberate here...
+        // (At a minimum, be clear about endianness)
+        let mut result = [0u32; 8];
+        unsafe {
+            let inp: [u32; 8] = mem::transmute(self.0);
+            let prime: [u32; 8] = mem::transmute(modulo.0);
+            field::modinv_256(&inp, &prime, &mut result);
+            self.0 = mem::transmute(result);
+        }
+    }
+
+    #[cfg(not(all(target_os = "zkvm", target_arch = "riscv32")))]
     /// Turn `self` into its multiplicative inverse (mod `modulo`)
     pub fn invert(&mut self, modulo: &U256) {
         // TODO: We could do this faster in the zkVM
