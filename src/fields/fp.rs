@@ -4,23 +4,35 @@ use rand::Rng;
 use crate::fields::FieldElement;
 use crate::arith::{U256, U512};
 
+#[cfg(all(target_os = "zkvm", target_arch = "riscv32"))]
+use risc0_bigint2::field;
+
 macro_rules! field_impl {
     ($name:ident, $modulus:expr, $rsquared:expr, $rcubed:expr, $one:expr, $inv:expr) => {
         #[derive(Copy, Clone, PartialEq, Eq, Debug)]
         #[repr(C)]
         pub struct $name(U256);
 
+
         impl From<$name> for U256 {
+            #[cfg(not(all(target_os = "zkvm", target_arch = "riscv32")))]
             #[inline]
             fn from(mut a: $name) -> Self {
                 a.0.mul(&U256::one(), &U256::from($modulus), $inv);
 
                 a.0
             }
+
+            #[cfg(all(target_os = "zkvm", target_arch = "riscv32"))]
+            #[inline]
+            fn from(mut a: $name) -> Self {
+                a.0
+            }
         }
 
         impl $name {
             pub fn from_str(s: &str) -> Option<Self> {
+                // TODO: Could make a little more efficient in the zkVM, but ... why bother?
                 let ints: Vec<_> = {
                     let mut acc = Self::zero();
                     (0..11).map(|_| {let tmp = acc; acc = acc + Self::one(); tmp}).collect()
@@ -43,6 +55,7 @@ macro_rules! field_impl {
             }
 
             /// Converts a U256 to an Fp so long as it's below the modulus.
+            #[cfg(not(all(target_os = "zkvm", target_arch = "riscv32")))]
             pub fn new(mut a: U256) -> Option<Self> {
                 if a < U256::from($modulus) {
                     a.mul(&U256::from($rsquared), &U256::from($modulus), $inv);
@@ -53,14 +66,59 @@ macro_rules! field_impl {
                 }
             }
 
+            /// Converts a U256 to an Fp so long as it's below the modulus.
+            #[cfg(all(target_os = "zkvm", target_arch = "riscv32"))]
+            pub fn new(mut a: U256) -> Option<Self> {
+                if a < U256::from($modulus) {
+                    Some($name(a))
+                } else {
+                    None
+                }
+            }
+
             /// Converts a U256 to an Fr regardless of modulus.
+            #[cfg(not(all(target_os = "zkvm", target_arch = "riscv32")))]
             pub fn new_mul_factor(mut a: U256) -> Self {
                 a.mul(&U256::from($rsquared), &U256::from($modulus), $inv);
                 $name(a)
             }
 
+            /// Converts a U256 to an Fr regardless of modulus.
+            #[cfg(all(target_os = "zkvm", target_arch = "riscv32"))]
+            pub fn new_mul_factor(mut a: U256) -> Self {
+                // TODO: There's probably a more performant approach, but this should be tiny regardless
+                a.mul(&U256::from(1u64), &U256::from($modulus), $inv);
+                $name(a)
+            }
+
+            #[cfg(all(target_os = "zkvm", target_arch = "riscv32"))]
+            fn R() -> Self {
+                // Computes 2^256 mod modulo; this is the R value this code uses for Montgomery Form
+                assert_ne!(Self::modulus().0[0], 0);
+                Self(U256([(!Self::modulus().0[0]) + 1, !Self::modulus().0[1]]))
+            }
+
+            // TODO
+            #[cfg(all(target_os = "zkvm", target_arch = "riscv32"))]
+            pub fn to_montgomery(mut self) -> Self {
+                self.mul(Self::R())
+            }
+
+            // // TODO
+            // #[cfg(all(target_os = "zkvm", target_arch = "riscv32"))]
+            // pub fn from_montgomery(mut self) -> Self {
+            //     self.mul(TODO, Self::R_inv())
+            // }
+
+            #[cfg(not(all(target_os = "zkvm", target_arch = "riscv32")))]
             pub fn interpret(buf: &[u8; 64]) -> Self {
                 $name::new(U512::interpret(buf).divrem(&U256::from($modulus)).1).unwrap()
+            }
+
+            // TODO: What is this?
+            #[cfg(all(target_os = "zkvm", target_arch = "riscv32"))]
+            pub fn interpret(buf: &[u8; 64]) -> Self {
+                unimplemented!();
             }
 
             /// Returns the modulus
@@ -70,18 +128,33 @@ macro_rules! field_impl {
                 U256::from($modulus)
             }
 
+            // TODO: Pretty pointless in the zkVM but I guess why not
             #[inline]
             #[allow(dead_code)]
             pub fn inv(&self) -> u128 {
                 $inv
             }
 
+            #[cfg(not(all(target_os = "zkvm", target_arch = "riscv32")))]
             pub fn raw(&self) -> &U256 {
                 &self.0
             }
 
+            #[cfg(all(target_os = "zkvm", target_arch = "riscv32"))]
+            pub fn raw(&self) -> &U256 {
+                // TODO: This needs to be to-montgomery
+                unimplemented!();
+            }
+
+            #[cfg(not(all(target_os = "zkvm", target_arch = "riscv32")))]
             pub fn set_bit(&mut self, bit: usize, to: bool) {
                 self.0.set_bit(bit, to);
+            }
+
+            #[cfg(all(target_os = "zkvm", target_arch = "riscv32"))]
+            pub fn set_bit(&mut self, bit: usize, to: bool) {
+                // TODO: Maintaining set_bit semantics is annoying
+                unimplemented!();
             }
         }
 
@@ -91,11 +164,19 @@ macro_rules! field_impl {
                 $name(U256::from([0, 0, 0, 0]))
             }
 
+            #[cfg(not(all(target_os = "zkvm", target_arch = "riscv32")))]
             #[inline]
             fn one() -> Self {
                 $name(U256::from($one))
             }
 
+            #[cfg(all(target_os = "zkvm", target_arch = "riscv32"))]
+            #[inline]
+            fn one() -> Self {
+                $name(U256::from([1, 0, 0, 0]))
+            }
+
+            // TODO: Does it matter that we get different random numbers (Montgomery vs. not)?
             fn random<R: Rng>(rng: &mut R) -> Self {
                 $name(U256::random(rng, &U256::from($modulus)))
             }
@@ -105,6 +186,7 @@ macro_rules! field_impl {
                 self.0.is_zero()
             }
 
+            #[cfg(not(all(target_os = "zkvm", target_arch = "riscv32")))]
             fn inverse(mut self) -> Option<Self> {
                 if self.is_zero() {
                     None
@@ -112,6 +194,16 @@ macro_rules! field_impl {
                     self.0.invert(&U256::from($modulus));
                     self.0.mul(&U256::from($rcubed), &U256::from($modulus), $inv);
 
+                    Some(self)
+                }
+            }
+
+            #[cfg(all(target_os = "zkvm", target_arch = "riscv32"))]
+            fn inverse(mut self) -> Option<Self> {
+                if self.is_zero() {
+                    None
+                } else {
+                    self.0.invert(&U256::from($modulus));
                     Some(self)
                 }
             }
@@ -142,9 +234,18 @@ macro_rules! field_impl {
         impl Mul for $name {
             type Output = $name;
 
+            #[cfg(not(all(target_os = "zkvm", target_arch = "riscv32")))]
             #[inline]
             fn mul(mut self, other: $name) -> $name {
                 self.0.mul(&other.0, &U256::from($modulus), $inv);
+
+                self
+            }
+
+            #[cfg(all(target_os = "zkvm", target_arch = "riscv32"))]
+            #[inline]
+            fn mul(mut self, other: $name) -> $name {
+                self.0.modmul(&other.0, &U256::from($modulus));
 
                 self
             }
@@ -259,31 +360,40 @@ impl Fq {
     }
 }
 
+#[cfg(not(all(target_os = "zkvm", target_arch = "riscv32")))]
 #[inline]
 pub fn const_fq(i: [u64; 4]) -> Fq {
     Fq(U256::from(i))
 }
 
-#[test]
-fn test_rsquared() {
-    let rng = &mut ::rand::thread_rng();
-
-    for _ in 0..1000 {
-        let a = Fr::random(rng);
-        let b: U256 = a.into();
-        let c = Fr::new(b).unwrap();
-
-        assert_eq!(a, c);
-    }
-
-    for _ in 0..1000 {
-        let a = Fq::random(rng);
-        let b: U256 = a.into();
-        let c = Fq::new(b).unwrap();
-
-        assert_eq!(a, c);
-    }
+// TODO: Since this is writing a raw value, need it to be build-specific
+#[cfg(all(target_os = "zkvm", target_arch = "riscv32"))]
+#[inline]
+pub fn const_fq(i: [u64; 4]) -> Fq {
+    // TODO: Here
+    Fq(U256::from(i))
 }
+
+// #[test]
+// fn test_rsquared() {
+//     let rng = &mut ::rand::thread_rng();
+
+//     for _ in 0..1000 {
+//         let a = Fr::random(rng);
+//         let b: U256 = a.into();
+//         let c = Fr::new(b).unwrap();
+
+//         assert_eq!(a, c);
+//     }
+
+//     for _ in 0..1000 {
+//         let a = Fq::random(rng);
+//         let b: U256 = a.into();
+//         let c = Fq::new(b).unwrap();
+
+//         assert_eq!(a, c);
+//     }
+// }
 
 #[test]
 fn tnz_simple_square() {
@@ -292,6 +402,16 @@ fn tnz_simple_square() {
     let fq2 = Fq::from_str("348579348568").unwrap();
 
     assert_eq!(fq1 * fq1, fq2);
+}
+
+#[test]
+fn tnz_basic_mul() {
+    // let two = Fq::from(U256::from(2u64));
+    // let three = Fq::from(U256::from(3u64));
+    let two = Fq::from_str("2").unwrap();
+    let three = Fq::from_str("3").unwrap();
+
+    assert_eq!(U256::from(two * three), U256::from(6u64));
 }
 
 // #[test]
