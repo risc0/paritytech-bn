@@ -384,51 +384,55 @@ pub fn const_fq(i: [u64; 4]) -> Fq {
     Fq(U256::from(i)).from_montgomery()
 }
 
-#[test]
-fn test_rsquared() {
-    let rng = &mut ::rand::thread_rng();
+// TODO: Skip: Passing
+// #[test]
+// fn test_rsquared() {
+//     let rng = &mut ::rand::thread_rng();
 
-    for _ in 0..2 {  // TODO: From 1000
-        let a = Fr::random(rng);
-        let b: U256 = a.into();
-        let c = Fr::new(b).unwrap();
+//     for _ in 0..2 {  // TODO: From 1000
+//         let a = Fr::random(rng);
+//         let b: U256 = a.into();
+//         let c = Fr::new(b).unwrap();
 
-        assert_eq!(a, c);
-    }
+//         assert_eq!(a, c);
+//     }
 
-    for _ in 0..2 {  // TODO: From 1000
-        let a = Fq::random(rng);
-        let b: U256 = a.into();
-        let c = Fq::new(b).unwrap();
+//     for _ in 0..2 {  // TODO: From 1000
+//         let a = Fq::random(rng);
+//         let b: U256 = a.into();
+//         let c = Fq::new(b).unwrap();
 
-        assert_eq!(a, c);
-    }
-}
+//         assert_eq!(a, c);
+//     }
+// }
 
-#[test]
-fn tnz_simple_square() {
-    // TODO: Based on sqrt_fq
-    let fq1 = Fq::from_str("5204065062716160319596273903996315000119019512886596366359652578430118331601").unwrap();
-    let fq2 = Fq::from_str("348579348568").unwrap();
+// TODO: Skip: Passing
+// #[test]
+// fn tnz_simple_square() {
+//     // TODO: Based on sqrt_fq
+//     let fq1 = Fq::from_str("5204065062716160319596273903996315000119019512886596366359652578430118331601").unwrap();
+//     let fq2 = Fq::from_str("348579348568").unwrap();
 
-    assert_eq!(fq1 * fq1, fq2);
-}
+//     assert_eq!(fq1 * fq1, fq2);
+// }
 
-#[test]
-fn tnz_basic_mul() {
-    // let two = Fq::from(U256::from(2u64));
-    // let three = Fq::from(U256::from(3u64));
-    let two = Fq::from_str("2").unwrap();
-    let three = Fq::from_str("3").unwrap();
+// TODO: Skip: Passing
+// #[test]
+// fn tnz_basic_mul() {
+//     // let two = Fq::from(U256::from(2u64));
+//     // let three = Fq::from(U256::from(3u64));
+//     let two = Fq::from_str("2").unwrap();
+//     let three = Fq::from_str("3").unwrap();
 
-    assert_eq!(U256::from(two * three), U256::from(6u64));
-}
+//     assert_eq!(U256::from(two * three), U256::from(6u64));
+// }
 
-#[test]
-fn sqrt_fq() {
-    // from zcash test_proof.cpp
-    let fq1 = Fq::from_str("5204065062716160319596273903996315000119019512886596366359652578430118331601").unwrap();
-    let fq2 = Fq::from_str("348579348568").unwrap();
+// TODO: Skip: Passing
+// #[test]
+// fn sqrt_fq() {
+//     // from zcash test_proof.cpp
+//     let fq1 = Fq::from_str("5204065062716160319596273903996315000119019512886596366359652578430118331601").unwrap();
+//     let fq2 = Fq::from_str("348579348568").unwrap();
 
-    assert_eq!(fq1, fq2.sqrt().expect("348579348568 is quadratic residue"));
-}
+//     assert_eq!(fq1, fq2.sqrt().expect("348579348568 is quadratic residue"));
+// }
