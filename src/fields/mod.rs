@@ -50,53 +50,53 @@ pub trait FieldElement
 mod tests;
 
 // TODO: Skip: Passing
-// #[test]
-// fn test_fr() {
-//     tests::field_trials::<Fr>();
-// }
+#[test]
+fn test_fr() {
+    tests::field_trials::<Fr>();
+}
 
 // TODO: Skip: Passing
-// #[test]
-// fn test_fq() {
-//     tests::field_trials::<Fq>();
-// }
+#[test]
+fn test_fq() {
+    tests::field_trials::<Fq>();
+}
 
 // TODO: Skip: Passing
-// #[test]
-// fn test_fq2() {
-//     tests::field_trials::<Fq2>();
-// }
+#[test]
+fn test_fq2() {
+    tests::field_trials::<Fq2>();
+}
 
 // TODO: Skip: Passing
-// #[test]
-// fn test_str() {
-//     assert_eq!(
-//         -Fr::one(),
-//         Fr::from_str(
-//             "21888242871839275222246405745257275088548364400416034343698204186575808495616"
-//         ).unwrap()
-//     );
-//     assert_eq!(
-//         -Fq::one(),
-//         Fq::from_str(
-//             "21888242871839275222246405745257275088696311157297823662689037894645226208582"
-//         ).unwrap()
-//     );
-// }
+#[test]
+fn test_str() {
+    assert_eq!(
+        -Fr::one(),
+        Fr::from_str(
+            "21888242871839275222246405745257275088548364400416034343698204186575808495616"
+        ).unwrap()
+    );
+    assert_eq!(
+        -Fq::one(),
+        Fq::from_str(
+            "21888242871839275222246405745257275088696311157297823662689037894645226208582"
+        ).unwrap()
+    );
+}
 
 // TODO: Skip: Passing
-// #[test]
-// fn test_fq6() {
-//     tests::field_trials::<Fq6>();
-// }
+#[test]
+fn test_fq6() {
+    tests::field_trials::<Fq6>();
+}
 
 // TODO: Skip: Passing
-// #[test]
-// fn test_fq12() {
-//     tests::field_trials::<Fq12>();
-// }
+#[test]
+fn test_fq12() {
+    tests::field_trials::<Fq12>();
+}
 
-//TODO: THIS ONE IS UNTESTED
+// TODO: Skip: Passing
 #[test]
 fn fq12_test_vector() {
     let start = Fq12::new(
@@ -233,6 +233,7 @@ fn fq12_test_vector() {
     assert_eq!(finally, next);
 }
 
+// TODO: Skip: Passing
 // TODO: Note: a little bit slow
 #[test]
 fn test_cyclotomic_exp() {
