@@ -175,10 +175,12 @@ macro_rules! field_impl {
         #[repr(C)]
         pub struct $name(U256);
 
+        // TODO: DOCUMENT THAT THIS ALSO CHANGED
         impl From<$name> for U256 {
             #[inline]
             fn from(mut a: $name) -> Self {
-                a.0.mul(&U256::one(), &U256::from($modulus), $inv);
+                // a.0.mul(&U256::one(), &U256::from($modulus), $inv);
+                a.0.mul_mont_precompile(&U256::one(), &U256::from($modulus), &U256::from($rinv));
 
                 a.0
             }
