@@ -235,6 +235,10 @@ macro_rules! field_impl {
                 U256::from($modulus)
             }
 
+            pub fn r_inv() -> U256 {
+                U256::from($rinv)
+            }
+
             #[inline]
             #[allow(dead_code)]
             pub fn inv(&self) -> u128 {
