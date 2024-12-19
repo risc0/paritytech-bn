@@ -340,6 +340,30 @@ impl U256 {
     #[cfg(all(target_os = "zkvm", target_arch = "riscv32"))]
     /// Multiply `self` by `other` (mod `modulo`)
     ///
+    /// This assumes we are in Montgomery form, and uses the inverse of the
+    /// Montgomery form `R` parameter as helper data. It is specific to the
+    /// RISC Zero ZKVM, as it uses a RISC Zero precompile.
+    pub fn mul_mont_precompile(&mut self, other: &U256, modulo: &U256, r_inv: &U256) {
+        let mut intermediate = [0u32; 8];
+        let mut result = [0u32; 8];
+        unsafe {
+            // TODO: Not entirely thrilled about using `transmute` for this, be a bit more deliberate here...
+            // (At a minimum, be clear about endianness)
+            let lhs: [u32; 8] = mem::transmute(self.0);
+            let rhs: [u32; 8] = mem::transmute(other.0);
+            let prime: [u32; 8] = mem::transmute(modulo.0);
+            let r_inv: [u32; 8] = mem::transmute(r_inv.0);
+
+            field::modmul_256(&lhs, &rhs, &prime, &mut intermediate);
+            field::modmul_256(&intermediate, &r_inv, &prime, &mut result);
+
+            self.0 = mem::transmute(result);
+        }
+    }
+
+    #[cfg(all(target_os = "zkvm", target_arch = "riscv32"))]
+    /// Multiply `self` by `other` (mod `modulo`)
+    ///
     /// To match the non-precompile API, this accepts an `inv` parameter, but TODO
     pub fn mul(&mut self, other: &U256, modulo: &U256, inv: u128) {
         let mut result = [0u32; 8];
