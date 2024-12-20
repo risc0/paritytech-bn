@@ -5,6 +5,8 @@ use crunchy::unroll;
 use byteorder::{BigEndian, ByteOrder};
 
 #[cfg(all(target_os = "zkvm", target_arch = "riscv32"))]
+use bytemuck;
+#[cfg(all(target_os = "zkvm", target_arch = "riscv32"))]
 use core::mem;
 #[cfg(all(target_os = "zkvm", target_arch = "riscv32"))]
 use risc0_bigint2::field;
@@ -285,16 +287,16 @@ impl U256 {
     #[cfg(all(target_os = "zkvm", target_arch = "riscv32"))]
     /// Add `other` to `self` (mod `modulo`)
     pub fn add(&mut self, other: &U256, modulo: &U256) {
-        let mut result = [0u32; 8];
+        let mut result = [0u128; 2];
         unsafe {
             // TODO: Not entirely thrilled about using `transmute` for this, be a bit more deliberate here...
             // (At a minimum, be clear about endianness)
-            let lhs: [u32; 8] = mem::transmute(self.0);
-            let rhs: [u32; 8] = mem::transmute(other.0);
-            let prime: [u32; 8] = mem::transmute(modulo.0);
-            field::modadd_256(&lhs, &rhs, &prime, &mut result);
-            self.0 = mem::transmute(result);
-            // TODO: Assert result < prime
+            let lhs: &[u32; 8] = bytemuck::cast_ref(&self.0);
+            let rhs: &[u32; 8] = bytemuck::cast_ref(&other.0);
+            let prime: &[u32; 8] = bytemuck::cast_ref(&modulo.0);
+            let result_mut: &mut [u32; 8] = bytemuck::cast_mut(&mut result);
+            field::modadd_256(lhs, rhs, prime, result_mut);
+            self.0 = result;
         }
     }
 
@@ -406,8 +408,6 @@ impl U256 {
             field::modinv_256(&neg_modulus_mod_2_218, &two_128, &mut m_prime);
             let m_prime: u128 = m_prime[0] as u128 + (1 << 32) * (m_prime[1] as u128) + (1 << 64) * (m_prime[2] as u128) + (1 << 96) * (m_prime[3] as u128);
             assert_eq!(inv, m_prime);  // Otherwise we have an inconsistency in b^n used in the algorithm
-
-
 
             // TODO: write up explanation of 1000 - 789 = 211 digit-wise algorithm
             //    TODO: Include case like 1000 - 240 = 760;

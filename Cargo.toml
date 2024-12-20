@@ -25,6 +25,7 @@ rustc-hex = { version = "2", default-features = false }
 
 # TODO
 [target.'cfg(all(target_os = "zkvm", target_arch = "riscv32"))'.dependencies]
+bytemuck = "1"
 risc0-bigint2 = { path = "../../../risc0/risc0/bigint2", features = ["unstable"] }
 
 # TODO: Ideally we'd skip this one

@@ -57,6 +57,7 @@ impl Fr {
     #[cfg(all(target_os = "zkvm", target_arch = "riscv32"))]
     pub fn to_big_endian(&self, slice: &mut [u8]) -> Result<(), FieldError> {
         // TODO: Does this rewrite anything? Add a test for if this mutates self (and just regular testing too)
+        // TODO: This algorithm surprises me
         let mont = self.0.to_montgomery();
         mont.raw()
             .to_big_endian(slice)
