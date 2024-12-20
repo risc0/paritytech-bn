@@ -392,25 +392,15 @@ impl U256 {
             let rhs: [u32; 8] = mem::transmute(other.0);
             let prime: [u32; 8] = mem::transmute(modulo.0);
 
-            // TODO: We're assuming R = (2^128)^2 (so b = 2^128, n = 2); verify this against inv?
+            // Verifying the assumption R = (2^128)^2 (so b = 2^128, n = 2) against inv?
             // To do so, we compute m_prime = -prime^(-1) mod 2^128 and confirm it is `inv`
             let mut neg_modulus_mod_2_218 = [0u32; 8];
-            let mut carry_needed = true;
+            assert_ne!(prime[0], 0, "Modulus must be prime");
             for i in 0..4 {  // mod 2^128, so only need to do least significant half
                 let val = prime[i];
-                neg_modulus_mod_2_218[i] = u32::MAX - val;
-                if carry_needed {
-                    if val == 0 {
-                        // m_prime[i] is zero and we still need to carry
-                        neg_modulus_mod_2_218[i] = 0;
-                        continue;
-                    }
-                    // Otherwise, we are done carrying
-                    neg_modulus_mod_2_218[i] += 1;
-                    carry_needed = false;
-                }
+                neg_modulus_mod_2_218[i] = u32::MAX - prime[i];
             }
-            assert!(!carry_needed, "Cannot use a modulus divisible by 2^128 in `mul`");  // TODO: More coverage?
+            neg_modulus_mod_2_218[0] += 1;  // Safe to add 1 since prime[0] != 0
             let mut m_prime = [0u32; 8];
             let mut two_128 = [0u32, 0u32, 0u32, 0u32, 1u32, 0u32, 0u32, 0u32];
             field::modinv_256(&neg_modulus_mod_2_218, &two_128, &mut m_prime);
@@ -963,4 +953,38 @@ fn testing_divrem() {
         assert!(c1.unwrap() < modulo);
         assert!(c0 < modulo);
     }
+}
+
+#[test]
+fn tnz_test_mul() {
+    // Tests Montgomery multiplication with known values (5 * 10 = 50)
+    let mut lhs = U256::from([
+        0x5059E8694A6C0E5F,
+        0x3F69A66D0E742784,
+        0x625AF360AB101812,
+        0x2E12444C75E1B101,
+    ]);
+    let rhs = U256::from([
+        0x58E95CFC540200FD,
+        0xB0E12FC6F4485774,
+        0x338FF155E94B9396,
+        0x13B994C81C2F53A6,
+    ]);
+    let expected = U256::from([
+        0x3D084613B3A71993,
+        0xDE7F9C7C725C25C1,
+        0x69D81708926CB9CD,
+        0x17472F351E407698,
+    ]);
+    let prime = U256::from([
+        0x3C208C16D87CFD47,
+        0x97816A916871CA8D,
+        0xB85045B68181585D,
+        0x30644E72E131A029,
+    ]);
+    let inv = 0x9ede7d651eca6ac987d20782e4866389;
+
+    lhs.mul(&rhs, &prime, inv);
+
+    assert_eq!(lhs, expected);
 }
