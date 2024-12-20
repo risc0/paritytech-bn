@@ -688,7 +688,7 @@ impl From<AffineG2> for G2 {
 #[cfg(test)]
 mod tests {
     use alloc::vec::Vec;
-    use super::{G1, Fq, G2, Fq2};
+    use super::{G1, Fq, G2, Fq2, Fr};
 
     fn hex(s: &'static str) -> Vec<u8> {
         use rustc_hex::FromHex;
@@ -750,5 +750,33 @@ mod tests {
                 &hex("0c023aed31b5a9e486366ea9988b05dba469c6206e58361d9c065bbea7d928204a761efc6e4fa08ed227650134b52c7f7dd0463963e8a4bf21f4899fe5da7f984a")
             ).is_err()
         );
+    }
+
+    #[test]
+    fn tnz_interpret() {
+        // Interpretting one should give one
+        let one_bytes: [u8; 64] = [
+            0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 1,
+        ];
+        let interp_one = Fq::interpret(&one_bytes);
+        assert_eq!(interp_one, Fq::one());
+        let interp_one = Fr::interpret(&one_bytes);
+        assert_eq!(interp_one, Fr::one());
+
+        // Interpretting a multiple of the modulus should give zero
+        // So we interpret modulus * (1 << 240)
+        let mut modulus_bytes = [0u8; 64];
+        let modulus = Fq::modulus();
+        modulus.to_big_endian(&mut modulus_bytes[2..34]);
+        let interp_modulus = Fq::interpret(&modulus_bytes);
+        assert_eq!(interp_modulus, Fq::zero());
+        // Fr doesn't expose a `modulus` function, so no testing this for it
     }
 }
