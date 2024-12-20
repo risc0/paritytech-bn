@@ -171,16 +171,12 @@ impl Mul for Fq2 {
 
             let prime: [u32; 8] = bytemuck::cast(Fq::modulus().0);
 
-            // let lhs: [[u32; 8]; 2] = [mem::transmute(U256::from(self.c0)), mem::transmute(U256::from(self.c1))];
-            // let rhs: [[u32; 8]; 2] = [mem::transmute(U256::from(other.c0)), mem::transmute(U256::from(other.c1))];
-            // let irred_poly: [[u32; 8]; 2] = [mem::transmute(U256::from(fq_non_residue())), [0; 8]];
-            // let prime: [u32; 8] = mem::transmute(Fq::modulus());
-            let mut result: [[u32; 8]; 2] = [[0; 8]; 2];
-            field::extfieldmul_256(&lhs, &rhs, &irred_poly, &prime, &mut result);
-            // TODO: Probably I could use the existing `from` rather than a transmute here
+            let mut result = [[0u128; 2]; 2];
+            let result_mut: &mut [[u32; 8]; 2] = bytemuck::cast_mut(&mut result);
+            field::extfieldmul_256(&lhs, &rhs, &irred_poly, &prime, result_mut);
             Fq2 {
-                c0: Fq::new(mem::transmute(result[0])).unwrap(),
-                c1: Fq::new(mem::transmute(result[1])).unwrap(),
+                c0: Fq::new(U256(result[0])).unwrap(),
+                c1: Fq::new(U256(result[1])).unwrap(),
             }
         }
     }
