@@ -157,10 +157,24 @@ impl Mul for Fq2 {
         unsafe {
             // TODO: Not entirely thrilled about using `transmute` for this, be a bit more deliberate here...
             // (At a minimum, be clear about endianness)
-            let lhs: [[u32; 8]; 2] = [mem::transmute(U256::from(self.c0)), mem::transmute(U256::from(self.c1))];
-            let rhs: [[u32; 8]; 2] = [mem::transmute(U256::from(other.c0)), mem::transmute(U256::from(other.c1))];
-            let irred_poly: [[u32; 8]; 2] = [mem::transmute(U256::from(fq_non_residue())), [0; 8]];
-            let prime: [u32; 8] = mem::transmute(Fq::modulus());
+
+            let lhs0: [u32; 8] = bytemuck::cast(U256::from(self.c0).0);
+            let lhs1: [u32; 8] = bytemuck::cast(U256::from(self.c1).0);
+            let lhs = [lhs0, lhs1];
+
+            let rhs0: [u32; 8] = bytemuck::cast(U256::from(other.c0).0);
+            let rhs1: [u32; 8] = bytemuck::cast(U256::from(other.c1).0);
+            let rhs = [rhs0, rhs1];
+
+            let irred_poly0: [u32; 8] = bytemuck::cast(U256::from(fq_non_residue()).0);
+            let irred_poly = [irred_poly0, [0; 8]];
+
+            let prime: [u32; 8] = bytemuck::cast(Fq::modulus().0);
+
+            // let lhs: [[u32; 8]; 2] = [mem::transmute(U256::from(self.c0)), mem::transmute(U256::from(self.c1))];
+            // let rhs: [[u32; 8]; 2] = [mem::transmute(U256::from(other.c0)), mem::transmute(U256::from(other.c1))];
+            // let irred_poly: [[u32; 8]; 2] = [mem::transmute(U256::from(fq_non_residue())), [0; 8]];
+            // let prime: [u32; 8] = mem::transmute(Fq::modulus());
             let mut result: [[u32; 8]; 2] = [[0; 8]; 2];
             field::extfieldmul_256(&lhs, &rhs, &irred_poly, &prime, &mut result);
             // TODO: Probably I could use the existing `from` rather than a transmute here

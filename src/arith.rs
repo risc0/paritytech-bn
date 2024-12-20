@@ -289,8 +289,6 @@ impl U256 {
     pub fn add(&mut self, other: &U256, modulo: &U256) {
         let mut result = [0u128; 2];
         unsafe {
-            // TODO: Not entirely thrilled about using `transmute` for this, be a bit more deliberate here...
-            // (At a minimum, be clear about endianness)
             let lhs: &[u32; 8] = bytemuck::cast_ref(&self.0);
             let rhs: &[u32; 8] = bytemuck::cast_ref(&other.0);
             let prime: &[u32; 8] = bytemuck::cast_ref(&modulo.0);
@@ -315,16 +313,14 @@ impl U256 {
     #[cfg(all(target_os = "zkvm", target_arch = "riscv32"))]
     /// Subtract `other` from `self` (mod `modulo`)
     pub fn sub(&mut self, other: &U256, modulo: &U256) {
-        let mut result = [0u32; 8];
+        let mut result = [0u128; 2];
         unsafe {
-            // TODO: Not entirely thrilled about using `transmute` for this, be a bit more deliberate here...
-            // (At a minimum, be clear about endianness)
-            let lhs: [u32; 8] = mem::transmute(self.0);
-            let rhs: [u32; 8] = mem::transmute(other.0);
-            let prime: [u32; 8] = mem::transmute(modulo.0);
-            field::modsub_256(&lhs, &rhs, &prime, &mut result);
-            self.0 = mem::transmute(result);
-            // TODO: Assert result < prime
+            let lhs: &[u32; 8] = bytemuck::cast_ref(&self.0);
+            let rhs: &[u32; 8] = bytemuck::cast_ref(&other.0);
+            let prime: &[u32; 8] = bytemuck::cast_ref(&modulo.0);
+            let result_mut: &mut [u32; 8] = bytemuck::cast_mut(&mut result);
+            field::modsub_256(lhs, rhs, prime, result_mut);
+            self.0 = result;
         }
     }
 
@@ -364,15 +360,14 @@ impl U256 {
     ///
     /// A standard modular multiplication that assumes none of the inputs are in Montgomery form.
     pub fn modmul(&mut self, other: &U256, modulo: &U256) {
-        // TODO: Not entirely thrilled about using `transmute` for this, be a bit more deliberate here...
-        // (At a minimum, be clear about endianness)
-        let mut result = [0u32; 8];
+        let mut result = [0u128; 2];
         unsafe {
-            let lhs: [u32; 8] = mem::transmute(self.0);
-            let rhs: [u32; 8] = mem::transmute(other.0);
-            let prime: [u32; 8] = mem::transmute(modulo.0);
-            field::modmul_256(&lhs, &rhs, &prime, &mut result);
-            self.0 = mem::transmute(result);
+            let lhs: &[u32; 8] = bytemuck::cast_ref(&self.0);
+            let rhs: &[u32; 8] = bytemuck::cast_ref(&other.0);
+            let prime: &[u32; 8] = bytemuck::cast_ref(&modulo.0);
+            let result_mut: &mut [u32; 8] = bytemuck::cast_mut(&mut result);
+            field::modmul_256(lhs, rhs, prime, result_mut);
+            self.0 = result;
         }
     }
 
@@ -386,13 +381,13 @@ impl U256 {
     /// computations, but we do verify that it matches its expected value under the assumption that
     /// R = (2^128)^2
     pub fn mul(&mut self, other: &U256, modulo: &U256, inv: u128) {
-        let mut result = [0u32; 8];
+        let mut result = [0u128; 2];
         unsafe {
-            // TODO: Not entirely thrilled about using `transmute` for this, be a bit more deliberate here...
-            // (At a minimum, be clear about endianness)
-            let lhs: [u32; 8] = mem::transmute(self.0);
-            let rhs: [u32; 8] = mem::transmute(other.0);
-            let prime: [u32; 8] = mem::transmute(modulo.0);
+            // TODO: Review for code quality post-transmute-rewrite
+            let lhs: &[u32; 8] = bytemuck::cast_ref(&self.0);
+            let rhs: &[u32; 8] = bytemuck::cast_ref(&other.0);
+            let prime: &[u32; 8] = bytemuck::cast_ref(&modulo.0);
+            let result_mut: &mut [u32; 8] = bytemuck::cast_mut(&mut result);
 
             // Verifying the assumption R = (2^128)^2 (so b = 2^128, n = 2) against inv?
             // To do so, we compute m_prime = -prime^(-1) mod 2^128 and confirm it is `inv`
@@ -432,15 +427,15 @@ impl U256 {
             }
             assert!(!carry_needed, "Cannot use 0 for modulus in `mul`");  // TODO: More coverage?
             let mut R_inv = [0u32; 8];
-            field::modinv_256(&R, &prime, &mut R_inv);
+            field::modinv_256(&R, prime, &mut R_inv);
+            let mut intermediate = [0u32; 8];
 
-            field::modmul_256(&lhs, &rhs, &prime, &mut result);
+            field::modmul_256(lhs, rhs, prime, &mut intermediate);
 
-            let mut result2 = [0u32; 8];
-            field::modmul_256(&result, &R_inv, &prime, &mut result2);
+            field::modmul_256(&intermediate, &R_inv, prime, result_mut);
             // TODO: Assert result2 < prime
 
-            self.0 = mem::transmute(result2);  // TODO: naming
+            self.0 = result;  // TODO: naming
         }
     }
 
@@ -473,14 +468,13 @@ impl U256 {
     #[cfg(all(target_os = "zkvm", target_arch = "riscv32"))]
     /// Turn `self` into its multiplicative inverse (mod `modulo`)
     pub fn invert(&mut self, modulo: &U256) {
-        // TODO: Not entirely thrilled about using `transmute` for this, be a bit more deliberate here...
-        // (At a minimum, be clear about endianness)
-        let mut result = [0u32; 8];
+        let mut result = [0u128; 2];
         unsafe {
-            let inp: [u32; 8] = mem::transmute(self.0);
-            let prime: [u32; 8] = mem::transmute(modulo.0);
-            field::modinv_256(&inp, &prime, &mut result);
-            self.0 = mem::transmute(result);
+            let inp: &[u32; 8] = bytemuck::cast_ref(&self.0);
+            let prime: &[u32; 8] = bytemuck::cast_ref(&modulo.0);
+            let result_mut: &mut [u32; 8] = bytemuck::cast_mut(&mut result);
+            field::modinv_256(inp, prime, result_mut);
+            self.0 = result;
         }
     }
 
