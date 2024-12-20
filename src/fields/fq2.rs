@@ -151,19 +151,6 @@ impl FieldElement for Fq2 {
     }
 }
 
-// TODO: Delete these
-// #[cfg(all(target_os = "zkvm", target_arch = "riscv32"))]
-// #[inline(never)]
-// fn todo_mut_cast(result: &mut [[u128; 2]; 2]) -> &mut [[u32; 8]; 2] {
-//     bytemuck::cast_mut(result)
-// }
-
-// #[cfg(all(target_os = "zkvm", target_arch = "riscv32"))]
-// #[inline(never)]
-// fn todo_zero() -> [[u128; 2]; 2] {
-//     [[0u128; 2]; 2]
-// }
-
 impl Mul for Fq2 {
     type Output = Fq2;
 
@@ -182,11 +169,11 @@ impl Mul for Fq2 {
 
         let prime: [u32; 8] = bytemuck::cast(Fq::modulus().0);
 
-        // let mut result = todo_zero();  // TODO: Delete
+        // TODO: Review whether this is the architecture we want (incl. on the risc0 repo side)
         let mut result = MaybeUninit::<[[u128; 2]; 2]>::uninit();
-        // let result_mut = todo_mut_cast(&mut result);  // TODO: Delete
-        // let result_mut: &mut [[u32; 8]; 2] = bytemuck::cast_mut(&mut result);
-        let result_mut: &mut [[u32; 8]; 2] = unsafe{bytemuck::cast_mut(result.assume_init_mut())};
+        let result_mut: &mut [[u32; 8]; 2] = unsafe {
+            bytemuck::cast_mut(result.assume_init_mut())
+        };
         field::extfieldmul_256(&lhs, &rhs, &irred_poly, &prime, result_mut);
         let result = unsafe { result.assume_init() };
         Fq2 {
