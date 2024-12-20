@@ -285,15 +285,13 @@ impl U256 {
     #[cfg(all(target_os = "zkvm", target_arch = "riscv32"))]
     /// Add `other` to `self` (mod `modulo`)
     pub fn add(&mut self, other: &U256, modulo: &U256) {
+        let lhs: &[u32; 8] = bytemuck::cast_ref(&self.0);
+        let rhs: &[u32; 8] = bytemuck::cast_ref(&other.0);
+        let prime: &[u32; 8] = bytemuck::cast_ref(&modulo.0);
         let mut result = [0u128; 2];
-        unsafe {
-            let lhs: &[u32; 8] = bytemuck::cast_ref(&self.0);
-            let rhs: &[u32; 8] = bytemuck::cast_ref(&other.0);
-            let prime: &[u32; 8] = bytemuck::cast_ref(&modulo.0);
-            let result_mut: &mut [u32; 8] = bytemuck::cast_mut(&mut result);
-            field::modadd_256(lhs, rhs, prime, result_mut);
-            self.0 = result;
-        }
+        let result_mut: &mut [u32; 8] = bytemuck::cast_mut(&mut result);
+        field::modadd_256(lhs, rhs, prime, result_mut);
+        self.0 = result;
     }
 
 
@@ -311,15 +309,13 @@ impl U256 {
     #[cfg(all(target_os = "zkvm", target_arch = "riscv32"))]
     /// Subtract `other` from `self` (mod `modulo`)
     pub fn sub(&mut self, other: &U256, modulo: &U256) {
+        let lhs: &[u32; 8] = bytemuck::cast_ref(&self.0);
+        let rhs: &[u32; 8] = bytemuck::cast_ref(&other.0);
+        let prime: &[u32; 8] = bytemuck::cast_ref(&modulo.0);
         let mut result = [0u128; 2];
-        unsafe {
-            let lhs: &[u32; 8] = bytemuck::cast_ref(&self.0);
-            let rhs: &[u32; 8] = bytemuck::cast_ref(&other.0);
-            let prime: &[u32; 8] = bytemuck::cast_ref(&modulo.0);
-            let result_mut: &mut [u32; 8] = bytemuck::cast_mut(&mut result);
-            field::modsub_256(lhs, rhs, prime, result_mut);
-            self.0 = result;
-        }
+        let result_mut: &mut [u32; 8] = bytemuck::cast_mut(&mut result);
+        field::modsub_256(lhs, rhs, prime, result_mut);
+        self.0 = result;
     }
 
 
@@ -358,15 +354,13 @@ impl U256 {
     ///
     /// A standard modular multiplication that assumes none of the inputs are in Montgomery form.
     pub fn modmul(&mut self, other: &U256, modulo: &U256) {
+        let lhs: &[u32; 8] = bytemuck::cast_ref(&self.0);
+        let rhs: &[u32; 8] = bytemuck::cast_ref(&other.0);
+        let prime: &[u32; 8] = bytemuck::cast_ref(&modulo.0);
         let mut result = [0u128; 2];
-        unsafe {
-            let lhs: &[u32; 8] = bytemuck::cast_ref(&self.0);
-            let rhs: &[u32; 8] = bytemuck::cast_ref(&other.0);
-            let prime: &[u32; 8] = bytemuck::cast_ref(&modulo.0);
-            let result_mut: &mut [u32; 8] = bytemuck::cast_mut(&mut result);
-            field::modmul_256(lhs, rhs, prime, result_mut);
-            self.0 = result;
-        }
+        let result_mut: &mut [u32; 8] = bytemuck::cast_mut(&mut result);
+        field::modmul_256(lhs, rhs, prime, result_mut);
+        self.0 = result;
     }
 
     #[cfg(all(target_os = "zkvm", target_arch = "riscv32"))]
@@ -379,62 +373,56 @@ impl U256 {
     /// computations, but we do verify that it matches its expected value under the assumption that
     /// R = (2^128)^2
     pub fn mul(&mut self, other: &U256, modulo: &U256, inv: u128) {
+        let lhs: &[u32; 8] = bytemuck::cast_ref(&self.0);
+        let rhs: &[u32; 8] = bytemuck::cast_ref(&other.0);
+        let prime: &[u32; 8] = bytemuck::cast_ref(&modulo.0);
         let mut result = [0u128; 2];
-        unsafe {
-            // TODO: Review for code quality post-transmute-rewrite
-            let lhs: &[u32; 8] = bytemuck::cast_ref(&self.0);
-            let rhs: &[u32; 8] = bytemuck::cast_ref(&other.0);
-            let prime: &[u32; 8] = bytemuck::cast_ref(&modulo.0);
-            let result_mut: &mut [u32; 8] = bytemuck::cast_mut(&mut result);
+        let result_mut: &mut [u32; 8] = bytemuck::cast_mut(&mut result);
 
-            // Verifying the assumption R = (2^128)^2 (so b = 2^128, n = 2) against inv?
-            // To do so, we compute m_prime = -prime^(-1) mod 2^128 and confirm it is `inv`
-            let mut neg_modulus_mod_2_218 = [0u32; 8];
-            assert_ne!(prime[0], 0, "Modulus must be prime");
-            for i in 0..4 {  // mod 2^128, so only need to do least significant half
-                let val = prime[i];
-                neg_modulus_mod_2_218[i] = u32::MAX - prime[i];
-            }
-            neg_modulus_mod_2_218[0] += 1;  // Safe to add 1 since prime[0] != 0
-            let mut m_prime = [0u32; 8];
-            let mut two_128 = [0u32, 0u32, 0u32, 0u32, 1u32, 0u32, 0u32, 0u32];
-            field::modinv_256(&neg_modulus_mod_2_218, &two_128, &mut m_prime);
-            let m_prime: u128 = m_prime[0] as u128 + (1 << 32) * (m_prime[1] as u128) + (1 << 64) * (m_prime[2] as u128) + (1 << 96) * (m_prime[3] as u128);
-            assert_eq!(inv, m_prime);  // Otherwise we have an inconsistency in b^n used in the algorithm
-
-            // TODO: write up explanation of 1000 - 789 = 211 digit-wise algorithm
-            //    TODO: Include case like 1000 - 240 = 760;
-            // TODO: Clean up
-            // Note: If prime < 2^128 this isn't normalized (i.e. we'll have R > prime), but we are
-            // only using it as an input to a field operation, so it doesn't need to be // TODO: true?
-            let mut R = [0u32; 8];  // This gives a representation of 2^256 mod prime, which is R
-            let mut carry_needed = true;
-            for i in 0..8 {
-                let val = prime[i];
-                R[i] = u32::MAX - val;
-                if carry_needed {
-                    if val == 0 {
-                        // R[i] is zero and we still need to carry
-                        R[i] = 0;
-                        continue;
-                    }
-                    // Otherwise, we are done carrying
-                    R[i] += 1;
-                    carry_needed = false;
-                }
-            }
-            assert!(!carry_needed, "Cannot use 0 for modulus in `mul`");  // TODO: More coverage?
-            let mut R_inv = [0u32; 8];
-            field::modinv_256(&R, prime, &mut R_inv);
-            let mut intermediate = [0u32; 8];
-
-            field::modmul_256(lhs, rhs, prime, &mut intermediate);
-
-            field::modmul_256(&intermediate, &R_inv, prime, result_mut);
-            // TODO: Assert result2 < prime
-
-            self.0 = result;  // TODO: naming
+        // Verifying the assumption R = (2^128)^2 (so b = 2^128, n = 2) against inv
+        // To do so, we compute m_prime = -prime^(-1) mod 2^128 and confirm it is `inv`
+        let mut neg_modulus_mod_2_218 = [0u32; 8];
+        assert_ne!(prime[0], 0, "Modulus must be prime");
+        for i in 0..4 {  // mod 2^128, so only need to do least significant half
+            let val = prime[i];
+            neg_modulus_mod_2_218[i] = u32::MAX - prime[i];
         }
+        neg_modulus_mod_2_218[0] += 1;  // Safe to add 1 since prime[0] != 0
+        let mut m_prime = [0u32; 8];
+        let mut two_128 = [0u32, 0u32, 0u32, 0u32, 1u32, 0u32, 0u32, 0u32];
+        field::modinv_256(&neg_modulus_mod_2_218, &two_128, &mut m_prime);
+        let m_prime: u128 = m_prime[0] as u128 + (1 << 32) * (m_prime[1] as u128) + (1 << 64) * (m_prime[2] as u128) + (1 << 96) * (m_prime[3] as u128);
+        assert_eq!(inv, m_prime);  // Otherwise we have an inconsistency in b^n used in the algorithm
+
+        // This computes R = 2^256 % P = 2^256 - P via digit-wise subtraction, using the trick
+        // that 2^256 - P will be the bit inverse of P plus 1.
+        // Note: If prime < 2^128 this isn't normalized (i.e. we'll have R > prime), but we are
+        // only using it as an input to a field operation, so it doesn't need to be
+        let mut R = [0u32; 8];  // This gives a representation of 2^256 mod prime, which is R
+        let mut carry_needed = true;
+        for i in 0..8 {
+            let val = prime[i];
+            R[i] = u32::MAX - val;
+            if carry_needed {
+                if val == 0 {
+                    // R[i] is zero and we still need to carry
+                    R[i] = 0;
+                    continue;
+                }
+                // Otherwise, we are done carrying
+                R[i] += 1;
+                carry_needed = false;
+            }
+        }
+        assert!(!carry_needed, "Cannot use 0 for modulus in `mul`"); 
+        let mut R_inv = [0u32; 8];
+        field::modinv_256(&R, prime, &mut R_inv);
+
+        let mut intermediate = [0u32; 8];
+        field::modmul_256(lhs, rhs, prime, &mut intermediate);
+        field::modmul_256(&intermediate, &R_inv, prime, result_mut);
+
+        self.0 = result;
     }
 
     #[cfg(not(all(target_os = "zkvm", target_arch = "riscv32")))]
@@ -466,21 +454,17 @@ impl U256 {
     #[cfg(all(target_os = "zkvm", target_arch = "riscv32"))]
     /// Turn `self` into its multiplicative inverse (mod `modulo`)
     pub fn invert(&mut self, modulo: &U256) {
+        let inp: &[u32; 8] = bytemuck::cast_ref(&self.0);
+        let prime: &[u32; 8] = bytemuck::cast_ref(&modulo.0);
         let mut result = [0u128; 2];
-        unsafe {
-            let inp: &[u32; 8] = bytemuck::cast_ref(&self.0);
-            let prime: &[u32; 8] = bytemuck::cast_ref(&modulo.0);
-            let result_mut: &mut [u32; 8] = bytemuck::cast_mut(&mut result);
-            field::modinv_256(inp, prime, result_mut);
-            self.0 = result;
-        }
+        let result_mut: &mut [u32; 8] = bytemuck::cast_mut(&mut result);
+        field::modinv_256(inp, prime, result_mut);
+        self.0 = result;
     }
 
     #[cfg(not(all(target_os = "zkvm", target_arch = "riscv32")))]
     /// Turn `self` into its multiplicative inverse (mod `modulo`)
     pub fn invert(&mut self, modulo: &U256) {
-        // TODO: We could do this faster in the zkVM
-
         // Guajardo Kumar Paar Pelzl
         // Efficient Software-Implementation of Finite Fields with Applications to Cryptography
         // Algorithm 16 (BEA for Inversion in Fp)
