@@ -6,6 +6,8 @@ use crate::arith::{U256, U512};
 #[cfg(all(target_os = "zkvm", target_arch = "riscv32"))]
 use bytemuck;
 #[cfg(all(target_os = "zkvm", target_arch = "riscv32"))]
+use core::mem::MaybeUninit;
+#[cfg(all(target_os = "zkvm", target_arch = "riscv32"))]
 use risc0_bigint2::field;
 
 // #[cfg(not(all(target_os = "zkvm", target_arch = "riscv32")))]
@@ -149,18 +151,18 @@ impl FieldElement for Fq2 {
     }
 }
 
+// TODO: Delete these
+// #[cfg(all(target_os = "zkvm", target_arch = "riscv32"))]
+// #[inline(never)]
+// fn todo_mut_cast(result: &mut [[u128; 2]; 2]) -> &mut [[u32; 8]; 2] {
+//     bytemuck::cast_mut(result)
+// }
 
-#[cfg(all(target_os = "zkvm", target_arch = "riscv32"))]
-#[inline(never)]
-fn todo_mut_cast(result: &mut [[u128; 2]; 2]) -> &mut [[u32; 8]; 2] {
-    bytemuck::cast_mut(result)
-}
-
-#[cfg(all(target_os = "zkvm", target_arch = "riscv32"))]
-#[inline(never)]
-fn todo_zero() -> [[u128; 2]; 2] {
-    [[0u128; 2]; 2]
-}
+// #[cfg(all(target_os = "zkvm", target_arch = "riscv32"))]
+// #[inline(never)]
+// fn todo_zero() -> [[u128; 2]; 2] {
+//     [[0u128; 2]; 2]
+// }
 
 impl Mul for Fq2 {
     type Output = Fq2;
@@ -180,11 +182,13 @@ impl Mul for Fq2 {
 
         let prime: [u32; 8] = bytemuck::cast(Fq::modulus().0);
 
-        let mut result = todo_zero();
-        // let mut result = [[0u128; 2]; 2];
-        let result_mut = todo_mut_cast(&mut result);
+        // let mut result = todo_zero();  // TODO: Delete
+        let mut result = MaybeUninit::<[[u128; 2]; 2]>::uninit();
+        // let result_mut = todo_mut_cast(&mut result);  // TODO: Delete
         // let result_mut: &mut [[u32; 8]; 2] = bytemuck::cast_mut(&mut result);
+        let result_mut: &mut [[u32; 8]; 2] = unsafe{bytemuck::cast_mut(result.assume_init_mut())};
         field::extfieldmul_256(&lhs, &rhs, &irred_poly, &prime, result_mut);
+        let result = unsafe { result.assume_init() };
         Fq2 {
             c0: Fq::new(U256(result[0])).unwrap(),
             c1: Fq::new(U256(result[1])).unwrap(),
