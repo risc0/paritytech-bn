@@ -7,8 +7,6 @@ use byteorder::{BigEndian, ByteOrder};
 #[cfg(all(target_os = "zkvm", target_arch = "riscv32"))]
 use bytemuck;
 #[cfg(all(target_os = "zkvm", target_arch = "riscv32"))]
-use core::mem;
-#[cfg(all(target_os = "zkvm", target_arch = "riscv32"))]
 use risc0_bigint2::field;
 
 /// 256-bit, stack allocated biginteger for use in prime field

@@ -4,7 +4,7 @@ use crate::fields::{const_fq, FieldElement, Fq};
 use crate::arith::{U256, U512};
 
 #[cfg(all(target_os = "zkvm", target_arch = "riscv32"))]
-use core::mem;
+use bytemuck;
 #[cfg(all(target_os = "zkvm", target_arch = "riscv32"))]
 use risc0_bigint2::field;
 
@@ -149,35 +149,45 @@ impl FieldElement for Fq2 {
     }
 }
 
+
+#[cfg(all(target_os = "zkvm", target_arch = "riscv32"))]
+#[inline(never)]
+fn todo_mut_cast(result: &mut [[u128; 2]; 2]) -> &mut [[u32; 8]; 2] {
+    bytemuck::cast_mut(result)
+}
+
+#[cfg(all(target_os = "zkvm", target_arch = "riscv32"))]
+#[inline(never)]
+fn todo_zero() -> [[u128; 2]; 2] {
+    [[0u128; 2]; 2]
+}
+
 impl Mul for Fq2 {
     type Output = Fq2;
 
     #[cfg(all(target_os = "zkvm", target_arch = "riscv32"))]
     fn mul(self, other: Fq2) -> Fq2 {
-        unsafe {
-            // TODO: Not entirely thrilled about using `transmute` for this, be a bit more deliberate here...
-            // (At a minimum, be clear about endianness)
+        let lhs0: [u32; 8] = bytemuck::cast(U256::from(self.c0).0);
+        let lhs1: [u32; 8] = bytemuck::cast(U256::from(self.c1).0);
+        let lhs = [lhs0, lhs1];
 
-            let lhs0: [u32; 8] = bytemuck::cast(U256::from(self.c0).0);
-            let lhs1: [u32; 8] = bytemuck::cast(U256::from(self.c1).0);
-            let lhs = [lhs0, lhs1];
+        let rhs0: [u32; 8] = bytemuck::cast(U256::from(other.c0).0);
+        let rhs1: [u32; 8] = bytemuck::cast(U256::from(other.c1).0);
+        let rhs = [rhs0, rhs1];
 
-            let rhs0: [u32; 8] = bytemuck::cast(U256::from(other.c0).0);
-            let rhs1: [u32; 8] = bytemuck::cast(U256::from(other.c1).0);
-            let rhs = [rhs0, rhs1];
+        let irred_poly0: [u32; 8] = bytemuck::cast(U256::from(fq_non_residue()).0);
+        let irred_poly = [irred_poly0, [0; 8]];
 
-            let irred_poly0: [u32; 8] = bytemuck::cast(U256::from(fq_non_residue()).0);
-            let irred_poly = [irred_poly0, [0; 8]];
+        let prime: [u32; 8] = bytemuck::cast(Fq::modulus().0);
 
-            let prime: [u32; 8] = bytemuck::cast(Fq::modulus().0);
-
-            let mut result = [[0u128; 2]; 2];
-            let result_mut: &mut [[u32; 8]; 2] = bytemuck::cast_mut(&mut result);
-            field::extfieldmul_256(&lhs, &rhs, &irred_poly, &prime, result_mut);
-            Fq2 {
-                c0: Fq::new(U256(result[0])).unwrap(),
-                c1: Fq::new(U256(result[1])).unwrap(),
-            }
+        let mut result = todo_zero();
+        // let mut result = [[0u128; 2]; 2];
+        let result_mut = todo_mut_cast(&mut result);
+        // let result_mut: &mut [[u32; 8]; 2] = bytemuck::cast_mut(&mut result);
+        field::extfieldmul_256(&lhs, &rhs, &irred_poly, &prime, result_mut);
+        Fq2 {
+            c0: Fq::new(U256(result[0])).unwrap(),
+            c1: Fq::new(U256(result[1])).unwrap(),
         }
     }
 
