@@ -519,6 +519,7 @@ impl<'a> Iterator for BitIterator<'a> {
 }
 
 /// Divide by two
+#[cfg(not(all(target_os = "zkvm", target_arch = "riscv32")))]
 #[inline]
 fn div2(a: &mut [u128; 2]) {
     let tmp = a[1] << 127;
@@ -557,6 +558,7 @@ fn adc(a: u128, b: u128, carry: &mut u128) -> u128 {
     combine_u128(r1, r0)
 }
 
+#[cfg(not(all(target_os = "zkvm", target_arch = "riscv32")))]
 #[inline]
 fn add_nocarry(a: &mut [u128; 2], b: &[u128; 2]) {
     let mut carry = 0;
@@ -644,6 +646,7 @@ fn mac_digit(from_index: usize, acc: &mut [u128; 4], b: &[u128; 2], c: u128) {
     debug_assert!(carry == 0);
 }
 
+#[cfg(not(all(target_os = "zkvm", target_arch = "riscv32")))]
 #[inline]
 fn mul_reduce(this: &mut [u128; 2], by: &[u128; 2], modulus: &[u128; 2], inv: u128) {
     // The Montgomery reduction here is based on Algorithm 14.32 in
