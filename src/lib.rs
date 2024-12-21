@@ -58,6 +58,7 @@ impl Fr {
     pub fn to_big_endian(&self, slice: &mut [u8]) -> Result<(), FieldError> {
         // TODO: Does this rewrite anything? Add a test for if this mutates self (and just regular testing too)
         // TODO: This algorithm surprises me
+        // TODO: In particular, it seems like Fq and Fr have different behavior regarding Montgomery form
         let mont = self.0.to_montgomery();
         mont.raw()
             .to_big_endian(slice)
@@ -182,7 +183,7 @@ impl Fq {
     #[cfg(all(target_os = "zkvm", target_arch = "riscv32"))]
     pub fn to_big_endian(&self, slice: &mut [u8]) -> Result<(), FieldError> {
         // TODO: Test code
-        let mut a: arith::U256 = self.0.into();
+        let a: arith::U256 = self.0.into();
         a.to_big_endian(slice)
             .map_err(|_| FieldError::InvalidSliceLength)
     }
@@ -779,5 +780,23 @@ mod tests {
         let interp_modulus = Fq::interpret(&modulus_bytes);
         assert_eq!(interp_modulus, Fq::zero());
         // Fr doesn't expose a `modulus` function, so no testing this for it
+    }
+
+    #[test]
+    fn tnz_big_endian() {
+        let mut empty_bytes = [0u8; 32];
+        let one_bytes: [u8; 32] = [
+            0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 1,
+        ];
+        Fq::one().to_big_endian(&mut empty_bytes).unwrap();
+        assert_eq!(empty_bytes, one_bytes);
+        empty_bytes = [0u8; 32];
+        // TODO: This fails because for `Fr` `to_big_endian` gives Montgomery form
+        // Note that this is not the behavior of `Fq`.
+        Fr::one().to_big_endian(&mut empty_bytes).unwrap();
+        assert_eq!(empty_bytes, one_bytes);
     }
 }
