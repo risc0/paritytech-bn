@@ -775,7 +775,7 @@ mod tests {
         // So we interpret modulus * (1 << 240)
         let mut modulus_bytes = [0u8; 64];
         let modulus = Fq::modulus();
-        modulus.to_big_endian(&mut modulus_bytes[2..34]);
+        modulus.to_big_endian(&mut modulus_bytes[2..34]).unwrap();
         let interp_modulus = Fq::interpret(&modulus_bytes);
         assert_eq!(interp_modulus, Fq::zero());
         // Fr doesn't expose a `modulus` function, so no testing this for it

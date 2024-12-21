@@ -330,26 +330,6 @@ impl U256 {
     }
 
     #[cfg(all(target_os = "zkvm", target_arch = "riscv32"))]
-    fn R(modulo: &U256) -> U256 {
-        // Computes 2^256 mod modulo; this is the R value this code uses for Montgomery Form
-        let mut result = U256([0, 0]);
-        let lo_neg = !modulo.0[0];
-        let lo_neg = lo_neg.wrapping_add(1);
-        result.0[0] = lo_neg;
-        let hi_neg = !modulo.0[1];
-        if lo_neg == 0 {
-            // We wrapped, i.e. need to carry
-            result.0[1] = hi_neg.wrapping_add(1);
-            if result.0[1] == 0 {
-                panic!("TODO: what to do if requested mod 0?");
-            }
-        } else {
-            result.0[1] = hi_neg;
-        }
-        return result;
-    }
-
-    #[cfg(all(target_os = "zkvm", target_arch = "riscv32"))]
     /// Multiply `self` by `other` (mod `modulo`). Non-Montgomery form
     ///
     /// A standard modular multiplication that assumes none of the inputs are in Montgomery form.
@@ -398,29 +378,29 @@ impl U256 {
         // that 2^256 - P will be the bit inverse of P plus 1.
         // Note: If prime < 2^128 this isn't normalized (i.e. we'll have R > prime), but we are
         // only using it as an input to a field operation, so it doesn't need to be
-        let mut R = [0u32; 8];  // This gives a representation of 2^256 mod prime, which is R
+        let mut r = [0u32; 8];  // This gives a representation of 2^256 mod prime, which is R
         let mut carry_needed = true;
         for i in 0..8 {
             let val = prime[i];
-            R[i] = u32::MAX - val;
+            r[i] = u32::MAX - val;
             if carry_needed {
                 if val == 0 {
-                    // R[i] is zero and we still need to carry
-                    R[i] = 0;
+                    // r[i] is zero and we still need to carry
+                    r[i] = 0;
                     continue;
                 }
                 // Otherwise, we are done carrying
-                R[i] += 1;
+                r[i] += 1;
                 carry_needed = false;
             }
         }
         assert!(!carry_needed, "Cannot use 0 for modulus in `mul`"); 
-        let mut R_inv = [0u32; 8];
-        field::modinv_256(&R, prime, &mut R_inv);
+        let mut r_inv = [0u32; 8];
+        field::modinv_256(&r, prime, &mut r_inv);
 
         let mut intermediate = [0u32; 8];
         field::modmul_256(lhs, rhs, prime, &mut intermediate);
-        field::modmul_256(&intermediate, &R_inv, prime, result_mut);
+        field::modmul_256(&intermediate, &r_inv, prime, result_mut);
 
         self.0 = result;
     }

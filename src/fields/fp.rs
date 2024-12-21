@@ -232,20 +232,21 @@ macro_rules! field_impl {
                 $name(a)
             }
 
-            fn R() -> Self {
+            // TODO: Do we actually even need these?
+            fn r() -> Self {
                 Self(U256::from($r))
             }
 
-            fn R_inv() -> Self {
+            fn r_inv() -> Self {
                 Self(U256::from($rinv))
             }
 
             pub fn to_montgomery(mut self) -> Self {
-                self.mul(Self::R())
+                self.mul(Self::r())
             }
 
             pub fn from_montgomery(mut self) -> Self {
-                self.mul(Self::R_inv())
+                self.mul(Self::r_inv())
             }
 
             /// Parse 64 bytes (big-endian) as a field element
