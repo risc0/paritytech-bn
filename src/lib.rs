@@ -759,30 +759,6 @@ mod tests {
     }
 
     #[test]
-    fn tnz_big_endian() {
-        let mut computed_bytes = [0u8; 32];
-        let one_bytes: [u8; 32] = [
-            0, 0, 0, 0, 0, 0, 0, 0,
-            0, 0, 0, 0, 0, 0, 0, 0,
-            0, 0, 0, 0, 0, 0, 0, 0,
-            0, 0, 0, 0, 0, 0, 0, 1,
-        ];
-        Fq::one().to_big_endian(&mut computed_bytes).unwrap();
-        assert_eq!(computed_bytes, one_bytes);
-        computed_bytes = [0u8; 32];
-        // Note: For `Fr`, `to_big_endian` gives Montgomery form
-        // Note also that this is not the behavior of `Fq`.
-        let one_bytes_montgomery_r: [u8; 32] = [
-            14,  10,  119, 193, 154, 7,   223, 47,
-            102, 110, 163, 111, 120, 121, 70,  46,
-            54,  252, 118, 149, 159, 96,  205, 41,
-            172, 150, 52,  28,  79,  255, 255, 251,
-        ];
-        Fr::one().to_big_endian(&mut computed_bytes).unwrap();
-        assert_eq!(computed_bytes, one_bytes_montgomery_r);
-    }
-
-    #[test]
     fn tnz_random() {
         let rng = &mut rand::thread_rng();
         let random_q = Fq::random(rng);
@@ -889,5 +865,29 @@ mod tests {
         assert_eq!(from_slice_one, Fq::one());
         let from_slice_one = Fr::from_slice(&one_bytes).unwrap();
         assert_eq!(from_slice_one, Fr::one());
+    }
+
+    #[test]
+    fn tnz_big_endian() {
+        let mut computed_bytes = [0u8; 32];
+        let one_bytes: [u8; 32] = [
+            0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 1,
+        ];
+        Fq::one().to_big_endian(&mut computed_bytes).unwrap();
+        assert_eq!(computed_bytes, one_bytes);
+        computed_bytes = [0u8; 32];
+        // Note: For `Fr`, `to_big_endian` gives Montgomery form
+        // Note also that this is not the behavior of `Fq`.
+        let one_bytes_montgomery_r: [u8; 32] = [
+            14,  10,  119, 193, 154, 7,   223, 47,
+            102, 110, 163, 111, 120, 121, 70,  46,
+            54,  252, 118, 149, 159, 96,  205, 41,
+            172, 150, 52,  28,  79,  255, 255, 251,
+        ];
+        Fr::one().to_big_endian(&mut computed_bytes).unwrap();
+        assert_eq!(computed_bytes, one_bytes_montgomery_r);
     }
 }
