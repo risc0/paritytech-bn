@@ -759,34 +759,6 @@ mod tests {
     }
 
     #[test]
-    fn tnz_interpret() {
-        // Interpretting one should give one
-        let one_bytes: [u8; 64] = [
-            0, 0, 0, 0, 0, 0, 0, 0,
-            0, 0, 0, 0, 0, 0, 0, 0,
-            0, 0, 0, 0, 0, 0, 0, 0,
-            0, 0, 0, 0, 0, 0, 0, 0,
-            0, 0, 0, 0, 0, 0, 0, 0,
-            0, 0, 0, 0, 0, 0, 0, 0,
-            0, 0, 0, 0, 0, 0, 0, 0,
-            0, 0, 0, 0, 0, 0, 0, 1,
-        ];
-        let interp_one = Fq::interpret(&one_bytes);
-        assert_eq!(interp_one, Fq::one());
-        let interp_one = Fr::interpret(&one_bytes);
-        assert_eq!(interp_one, Fr::one());
-
-        // Interpretting a multiple of the modulus should give zero
-        // So we interpret modulus * (1 << 240)
-        let mut modulus_bytes = [0u8; 64];
-        let modulus = Fq::modulus();
-        modulus.to_big_endian(&mut modulus_bytes[2..34]).unwrap();
-        let interp_modulus = Fq::interpret(&modulus_bytes);
-        assert_eq!(interp_modulus, Fq::zero());
-        // Fr doesn't expose a `modulus` function, so no testing this for it
-    }
-
-    #[test]
     fn tnz_big_endian() {
         let mut computed_bytes = [0u8; 32];
         let one_bytes: [u8; 32] = [
@@ -875,5 +847,33 @@ mod tests {
     fn tnz_zero() {
         assert!(Fq::zero().is_zero());
         assert!(Fr::zero().is_zero());
+    }
+
+    #[test]
+    fn tnz_interpret() {
+        // Interpretting one should give one
+        let one_bytes: [u8; 64] = [
+            0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 1,
+        ];
+        let interp_one = Fq::interpret(&one_bytes);
+        assert_eq!(interp_one, Fq::one());
+        let interp_one = Fr::interpret(&one_bytes);
+        assert_eq!(interp_one, Fr::one());
+
+        // Interpretting a multiple of the modulus should give zero
+        // So we interpret modulus * (1 << 240)
+        let mut modulus_bytes = [0u8; 64];
+        let modulus = Fq::modulus();
+        modulus.to_big_endian(&mut modulus_bytes[2..34]).unwrap();
+        let interp_modulus = Fq::interpret(&modulus_bytes);
+        assert_eq!(interp_modulus, Fq::zero());
+        // Fr doesn't expose a `modulus` function, so no testing this for it
     }
 }
