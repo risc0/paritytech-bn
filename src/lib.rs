@@ -890,4 +890,9 @@ mod tests {
         Fr::one().to_big_endian(&mut computed_bytes).unwrap();
         assert_eq!(computed_bytes, one_bytes_montgomery_r);
     }
+
+    #[test]
+    fn tnz_new() {
+        assert_eq!(Fr::new(1.into()).unwrap(), Fr::one());
+    }
 }
