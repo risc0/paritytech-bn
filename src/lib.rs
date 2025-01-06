@@ -833,4 +833,17 @@ mod tests {
         assert_eq!(random_q.pow(Fq::zero()), Fq::one());
         assert_eq!(random_r.pow(Fr::zero()), Fr::one());
     }
+
+    #[test]
+    fn tnz_from_str() {
+        let q4 = Fq::from_str("4").unwrap();
+        let q9 = Fq::from_str("9").unwrap();
+        let q36 = Fq::from_str("36").unwrap();
+        let r4 = Fr::from_str("4").unwrap();
+        let r9 = Fr::from_str("9").unwrap();
+        let r36 = Fr::from_str("36").unwrap();
+
+        assert_eq!(q4 * q9, q36);
+        assert_eq!(r4 * r9, r36);
+    }
 }
