@@ -54,14 +54,15 @@ impl Fr {
             .to_big_endian(slice)
             .map_err(|_| FieldError::InvalidSliceLength)
     }
+    /// Convert to a big-endian slice of `u8`s in Montgomery form
+    ///
+    /// Note that `Fr` and `Fq` have different behavior for `to_big_endian`,
+    /// with `Fq` using standard form instead of Montgomery form.
     #[cfg(all(target_os = "zkvm", target_arch = "riscv32"))]
     pub fn to_big_endian(&self, slice: &mut [u8]) -> Result<(), FieldError> {
-        // TODO: Does this rewrite anything? Add a test for if this mutates self (and just regular testing too)
-        // TODO: This algorithm surprises me
-        // TODO: In particular, it seems like Fq and Fr have different behavior regarding Montgomery form
-        let mont = self.0.to_montgomery();
-        mont.raw()
-            .to_big_endian(slice)
+        let a = Fr(self.0.to_montgomery()).into_u256();
+
+        a.to_big_endian(slice)
             .map_err(|_| FieldError::InvalidSliceLength)
     }
     pub fn new(val: arith::U256) -> Option<Self> {
@@ -180,9 +181,12 @@ impl Fq {
         a.to_big_endian(slice)
             .map_err(|_| FieldError::InvalidSliceLength)
     }
+    /// Convert to a big-endian slice of `u8`s in standard form
+    ///
+    /// Note that `Fr` and `Fq` have different behavior for `to_big_endian`,
+    /// with `Fr` using Montgomery form instead of standard form.
     #[cfg(all(target_os = "zkvm", target_arch = "riscv32"))]
     pub fn to_big_endian(&self, slice: &mut [u8]) -> Result<(), FieldError> {
-        // TODO: Test code
         let a: arith::U256 = self.0.into();
         a.to_big_endian(slice)
             .map_err(|_| FieldError::InvalidSliceLength)
@@ -794,9 +798,15 @@ mod tests {
         Fq::one().to_big_endian(&mut computed_bytes).unwrap();
         assert_eq!(computed_bytes, one_bytes);
         computed_bytes = [0u8; 32];
-        // TODO: This fails because for `Fr` `to_big_endian` gives Montgomery form
-        // Note that this is not the behavior of `Fq`.
+        // Note: For `Fr`, `to_big_endian` gives Montgomery form
+        // Note also that this is not the behavior of `Fq`.
+        let one_bytes_montgomery_r: [u8; 32] = [
+            14,  10,  119, 193, 154, 7,   223, 47,
+            102, 110, 163, 111, 120, 121, 70,  46,
+            54,  252, 118, 149, 159, 96,  205, 41,
+            172, 150, 52,  28,  79,  255, 255, 251,
+        ];
         Fr::one().to_big_endian(&mut computed_bytes).unwrap();
-        assert_eq!(computed_bytes, one_bytes);
+        assert_eq!(computed_bytes, one_bytes_montgomery_r);
     }
 }
