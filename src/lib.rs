@@ -784,19 +784,19 @@ mod tests {
 
     #[test]
     fn tnz_big_endian() {
-        let mut empty_bytes = [0u8; 32];
+        let mut computed_bytes = [0u8; 32];
         let one_bytes: [u8; 32] = [
             0, 0, 0, 0, 0, 0, 0, 0,
             0, 0, 0, 0, 0, 0, 0, 0,
             0, 0, 0, 0, 0, 0, 0, 0,
             0, 0, 0, 0, 0, 0, 0, 1,
         ];
-        Fq::one().to_big_endian(&mut empty_bytes).unwrap();
-        assert_eq!(empty_bytes, one_bytes);
-        empty_bytes = [0u8; 32];
+        Fq::one().to_big_endian(&mut computed_bytes).unwrap();
+        assert_eq!(computed_bytes, one_bytes);
+        computed_bytes = [0u8; 32];
         // TODO: This fails because for `Fr` `to_big_endian` gives Montgomery form
         // Note that this is not the behavior of `Fq`.
-        Fr::one().to_big_endian(&mut empty_bytes).unwrap();
-        assert_eq!(empty_bytes, one_bytes);
+        Fr::one().to_big_endian(&mut computed_bytes).unwrap();
+        assert_eq!(computed_bytes, one_bytes);
     }
 }
