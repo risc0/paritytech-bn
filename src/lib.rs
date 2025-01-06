@@ -819,4 +819,18 @@ mod tests {
         assert!((random_q - random_q).is_zero());
         assert!((random_r - random_r).is_zero());
     }
+
+    #[test]
+    fn tnz_pow() {
+        let rng = &mut rand::thread_rng();
+        let random_q = Fq::random(rng);
+        let random_r = Fr::random(rng);
+
+        assert_eq!(random_q.pow(Fq::one()), random_q);
+        assert_eq!(random_r.pow(Fr::one()), random_r);
+        assert_eq!(Fq::one().pow(random_q), Fq::one());
+        assert_eq!(Fr::one().pow(random_r), Fr::one());
+        assert_eq!(random_q.pow(Fq::zero()), Fq::one());
+        assert_eq!(random_r.pow(Fr::zero()), Fr::one());
+    }
 }
