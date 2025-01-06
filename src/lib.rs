@@ -809,4 +809,14 @@ mod tests {
         Fr::one().to_big_endian(&mut computed_bytes).unwrap();
         assert_eq!(computed_bytes, one_bytes_montgomery_r);
     }
+
+    #[test]
+    fn tnz_random() {
+        let rng = &mut rand::thread_rng();
+        let random_q = Fq::random(rng);
+        let random_r = Fr::random(rng);
+
+        assert!((random_q - random_q).is_zero());
+        assert!((random_r - random_r).is_zero());
+    }
 }
