@@ -870,4 +870,10 @@ mod tests {
             assert_eq!(inv_r.unwrap() * random_r, Fr::one());
         }
     }
+
+    #[test]
+    fn tnz_zero() {
+        assert!(Fq::zero().is_zero());
+        assert!(Fr::zero().is_zero());
+    }
 }
