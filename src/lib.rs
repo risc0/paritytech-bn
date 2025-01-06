@@ -846,4 +846,28 @@ mod tests {
         assert_eq!(q4 * q9, q36);
         assert_eq!(r4 * r9, r36);
     }
+
+    #[test]
+    fn tnz_inverse() {
+        assert!(Fq::zero().inverse().is_none());
+        assert!(Fr::zero().inverse().is_none());
+
+        let rng = &mut rand::thread_rng();
+        let random_q = Fq::random(rng);
+        let random_r = Fr::random(rng);
+
+        let inv_q = random_q.inverse();
+        let inv_r = random_r.inverse();
+
+        if random_q.is_zero() {
+            assert!(inv_q.is_none());
+        } else {
+            assert_eq!(inv_q.unwrap() * random_q, Fq::one());
+        }
+        if random_r.is_zero() {
+            assert!(inv_r.is_none());
+        } else {
+            assert_eq!(inv_r.unwrap() * random_r, Fr::one());
+        }
+    }
 }
