@@ -876,4 +876,18 @@ mod tests {
         assert_eq!(interp_modulus, Fq::zero());
         // Fr doesn't expose a `modulus` function, so no testing this for it
     }
+
+    #[test]
+    fn tnz_from_slice() {
+        let one_bytes: [u8; 32] = [
+            0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 1,
+        ];
+        let from_slice_one = Fq::from_slice(&one_bytes).unwrap();
+        assert_eq!(from_slice_one, Fq::one());
+        let from_slice_one = Fr::from_slice(&one_bytes).unwrap();
+        assert_eq!(from_slice_one, Fr::one());
+    }
 }
