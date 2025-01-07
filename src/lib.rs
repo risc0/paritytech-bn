@@ -918,4 +918,12 @@ mod tests {
         assert_eq!(Fr::new_mul_factor(0.into()), Fr::zero());
         assert_eq!(Fr::new_mul_factor(1.into()), Fr::one());
     }
+
+    #[test]
+    fn tnz_into_u256() {
+        let q5 = Fq::from_str("5").unwrap();
+        let r5 = Fr::from_str("5").unwrap();
+        assert_eq!(q5.into_u256(), 5.into());
+        assert_eq!(r5.into_u256(), 5.into());
+    }
 }
