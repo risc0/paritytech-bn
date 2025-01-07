@@ -926,4 +926,6 @@ mod tests {
         assert_eq!(q5.into_u256(), 5.into());
         assert_eq!(r5.into_u256(), 5.into());
     }
+
+    // Note: Not testing set_bit because it's not implemented for RISC Zero
 }
