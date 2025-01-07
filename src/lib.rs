@@ -955,4 +955,23 @@ mod tests {
                 Fq::sqrt(&Fq::from_str("2").unwrap()).unwrap());
         assert!(Fq::sqrt(&(Fq::zero() - Fq::one())).is_none());
     }
+
+    #[test]
+    fn tnz_arithmetic() {
+        assert_eq!(Fq::one() + Fq::one(), Fq::from_str("2").unwrap());
+        assert_eq!(Fq::one() - Fq::one(), Fq::zero());
+        assert_eq!(-Fq::zero(), Fq::zero());
+        assert_eq!(-Fq::one() + Fq::one(), Fq::zero());
+        assert_eq!(Fq::one() * Fq::one(), Fq::one());
+        assert_eq!(Fq::one() * Fq::zero(), Fq::zero());
+        assert_eq!(Fq::from_str("8").unwrap() * Fq::from_str("9").unwrap(), Fq::from_str("72").unwrap());
+
+        assert_eq!(Fr::one() + Fr::one(), Fr::from_str("2").unwrap());
+        assert_eq!(Fr::one() - Fr::one(), Fr::zero());
+        assert_eq!(-Fr::zero(), Fr::zero());
+        assert_eq!(-Fr::one() + Fr::one(), Fr::zero());
+        assert_eq!(Fr::one() * Fr::one(), Fr::one());
+        assert_eq!(Fr::one() * Fr::zero(), Fr::zero());
+        assert_eq!(Fr::from_str("8").unwrap() * Fr::from_str("9").unwrap(), Fr::from_str("72").unwrap());
+    }
 }
