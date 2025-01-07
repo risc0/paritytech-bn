@@ -1002,4 +1002,31 @@ mod tests {
         let ext_elem = Fq2::new(Fq::from_str("5").unwrap(), Fq::from_str("2").unwrap());
         assert_eq!(ext_elem.pow(3.into()), Fq2::new(Fq::from_str("65").unwrap(), Fq::from_str("142").unwrap()));
     }
+
+    #[test]
+    fn tnz_fq2_sqrt() {
+        assert_eq!(Fq2::sqrt(&Fq2::zero()).unwrap(), Fq2::zero());
+        assert_eq!(Fq2::sqrt(&Fq2::one()).unwrap(), Fq2::one());
+        assert_eq!(Fq2::sqrt(&-Fq2::one()).unwrap(), Fq2::i());
+        assert_eq!(Fq2::sqrt(&Fq2::new(Fq::from_str("4").unwrap(), Fq::zero())).unwrap(),
+                Fq2::new(Fq::from_str("2").unwrap(), Fq::zero()));
+    }
+
+    #[test]
+    fn tnz_fq2_from_slice() {
+        // This is 1 << 256; it represents ((1 << 256) % q) + ((1 << 256) / q) * i
+        let example: [u8; 64] = [
+            0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 1,
+            0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0,
+        ];
+        let val = Fq2::from_slice(&example).unwrap();
+        assert_eq!(val.real(), Fq::from_str("6350874878119819312338956282401532409788428879151445726012394534686998597021").unwrap());
+        assert_eq!(val.imaginary(), Fq::from_str("5").unwrap());
+    }
 }
