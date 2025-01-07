@@ -938,4 +938,11 @@ mod tests {
         assert_eq!(Fq::from_u256(0.into()).unwrap(), Fq::zero());
         assert_eq!(Fq::from_u256(1.into()).unwrap(), Fq::one());
     }
+
+    #[test]
+    fn tnz_modulus() {
+        let mut modulus_minus_one = Fq::modulus();
+        modulus_minus_one.0[0] -= 1;
+        assert_eq!(Fq::from_u256(modulus_minus_one).unwrap(), Fq::zero() - Fq::one());
+    }
 }
