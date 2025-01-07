@@ -974,4 +974,26 @@ mod tests {
         assert_eq!(Fr::one() * Fr::zero(), Fr::zero());
         assert_eq!(Fr::from_str("8").unwrap() * Fr::from_str("9").unwrap(), Fr::from_str("72").unwrap());
     }
+
+    #[test]
+    fn tnz_fq2_constants() {
+        assert!(Fq2::zero().is_zero());
+        assert_eq!(Fq2::one() + Fq2::i() * Fq2::i(), Fq2::zero());
+        assert_eq!(Fq2::one() * Fq2::i(), Fq2::i());
+        assert_eq!(Fq2::zero() * Fq2::i(), Fq2::zero());
+
+        assert_eq!(Fq2::zero().real(), Fq::zero());
+        assert_eq!(Fq2::zero().imaginary(), Fq::zero());
+        assert_eq!(Fq2::one().real(), Fq::one());
+        assert_eq!(Fq2::one().imaginary(), Fq::zero());
+        assert_eq!(Fq2::i().real(), Fq::zero());
+        assert_eq!(Fq2::i().imaginary(), Fq::one());
+    }
+
+    #[test]
+    fn tnz_fq2_new_and_parts() {
+        let ext_elem = Fq2::new(Fq::from_str("4").unwrap(), Fq::from_str("3").unwrap());
+        assert_eq!(ext_elem.real(), Fq::from_str("4").unwrap());
+        assert_eq!(ext_elem.imaginary(), Fq::from_str("3").unwrap());
+    }
 }
