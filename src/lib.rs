@@ -945,4 +945,14 @@ mod tests {
         modulus_minus_one.0[0] -= 1;
         assert_eq!(Fq::from_u256(modulus_minus_one).unwrap(), Fq::zero() - Fq::one());
     }
+
+    #[test]
+    fn tnz_sqrt() {
+        assert_eq!(Fq::one(), Fq::sqrt(&Fq::one()).unwrap());
+        assert_eq!(Fq::zero(), Fq::sqrt(&Fq::zero()).unwrap());
+        assert_eq!(Fq::from_str("2").unwrap(), Fq::sqrt(&Fq::from_str("4").unwrap()).unwrap());
+        assert_eq!(Fq::from_str("17918450306617730576773466553562392805212959031101866706334976164702657599807").unwrap(),
+                Fq::sqrt(&Fq::from_str("2").unwrap()).unwrap());
+        assert!(Fq::sqrt(&(Fq::zero() - Fq::one())).is_none());
+    }
 }
