@@ -928,4 +928,14 @@ mod tests {
     }
 
     // Note: Not testing set_bit because it's not implemented for RISC Zero
+
+    #[test]
+    fn tnz_from_u256() {
+        assert!(Fq::from_u256(Fq::modulus()).is_err());
+        let mut modulus_plus_one = Fq::modulus();
+        modulus_plus_one.0[0] += 1;
+        assert!(Fq::from_u256(modulus_plus_one).is_err());
+        assert_eq!(Fq::from_u256(0.into()).unwrap(), Fq::zero());
+        assert_eq!(Fq::from_u256(1.into()).unwrap(), Fq::one());
+    }
 }
