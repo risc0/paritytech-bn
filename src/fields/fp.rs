@@ -227,9 +227,9 @@ macro_rules! field_impl {
 
             pub fn new_mul_factor(mut a: U256) -> Self {
                 // TODO: Note this is the simpler zkVM case
-                // TODO: There's probably a more performant approach, but this should be tiny regardless
-                a.mul(&U256::from(1u64), &U256::from($modulus), $inv);
-                $name(a)
+                // Note: This adds zero to force a reduce
+                // TODO: Maybe make a reduce op?
+                $name(a) + $name(U256::from([0, 0, 0, 0]))
             }
 
             // TODO: Do we actually even need these?
