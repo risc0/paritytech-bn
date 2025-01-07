@@ -893,6 +893,22 @@ mod tests {
 
     #[test]
     fn tnz_new() {
+        assert!(Fr::new(crate::fields::Fr::modulus()).is_none());
+        let mut modulus_plus_one = crate::fields::Fr::modulus();
+        modulus_plus_one.0[0] += 1;
+        assert!(Fr::new(modulus_plus_one).is_none());
+        assert_eq!(Fr::new(0.into()).unwrap(), Fr::zero());
         assert_eq!(Fr::new(1.into()).unwrap(), Fr::one());
+    }
+
+    #[test]
+    fn tnz_new_mul_factor() {
+        assert_eq!(Fr::new_mul_factor(crate::fields::Fr::modulus()), Fr::zero());
+        let mut modulus_plus_one = crate::fields::Fr::modulus();
+        modulus_plus_one.0[0] += 1;
+        assert_eq!(Fr::new_mul_factor(modulus_plus_one), Fr::one());
+
+        assert_eq!(Fr::new_mul_factor(0.into()), Fr::zero());
+        assert_eq!(Fr::new_mul_factor(1.into()), Fr::one());
     }
 }
