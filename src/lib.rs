@@ -65,9 +65,16 @@ impl Fr {
         a.to_big_endian(slice)
             .map_err(|_| FieldError::InvalidSliceLength)
     }
+    /// Create a new Fr value
+    ///
+    /// Returns `None` if the input is greater than or equal to the field modulus
     pub fn new(val: arith::U256) -> Option<Self> {
         fields::Fr::new(val).map(|x| Fr(x))
     }
+    /// Create a new Fr value
+    ///
+    /// If the input is greater than or equal to the field modulus, it will mod out by the modulus
+    /// to create an element in reduced form.
     pub fn new_mul_factor(val: arith::U256) -> Self {
         Fr(fields::Fr::new_mul_factor(val))
     }
