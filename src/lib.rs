@@ -996,4 +996,10 @@ mod tests {
         assert_eq!(ext_elem.real(), Fq::from_str("4").unwrap());
         assert_eq!(ext_elem.imaginary(), Fq::from_str("3").unwrap());
     }
+
+    #[test]
+    fn tnz_fq2_pow() {
+        let ext_elem = Fq2::new(Fq::from_str("5").unwrap(), Fq::from_str("2").unwrap());
+        assert_eq!(ext_elem.pow(3.into()), Fq2::new(Fq::from_str("65").unwrap(), Fq::from_str("142").unwrap()));
+    }
 }
