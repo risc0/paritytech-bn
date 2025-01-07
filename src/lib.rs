@@ -1030,3 +1030,5 @@ mod tests {
         assert_eq!(val.imaginary(), Fq::from_str("5").unwrap());
     }
 }
+
+// TODO: Do we want to test the groups (i.e. G1, G2, Gt, AffineG1, and AffineG2)?

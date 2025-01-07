@@ -947,3 +947,6 @@ fn tnz_test_mul() {
 
     assert_eq!(lhs, expected);
 }
+
+// TODO: Untested: U256: zero, one, get_bit, add, sub, neg, is_even, invert
+// TODO: Untested: U512: new, from_slice, random, get_bit, interpret
