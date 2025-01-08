@@ -985,4 +985,10 @@ fn tnz_from_le_bytes() {
         20, 10, 22, 33, 13, 11, 24, 47,
     ];
     assert_eq!(val_from_le, U256::from_slice(&be_bytes).unwrap());
+    assert_eq!(val_from_le, U256::from([
+        0x140A16210D0B182F,
+        0x0000000000002800,
+        0x0000000000320000,
+        0x220000003C000000,
+    ]));
 }
