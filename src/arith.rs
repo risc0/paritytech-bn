@@ -1,4 +1,5 @@
 use core::cmp::Ordering;
+use core::mem;
 use rand::Rng;
 use crunchy::unroll;
 
@@ -497,6 +498,15 @@ impl U256 {
     pub fn bits(&self) -> BitIterator {
         BitIterator { int: &self, n: 256 }
     }
+
+    pub const fn from_le_bytes(bytes: [u8; 32]) -> Self {
+        // Safe to transmute due to the array layout rules:
+        // https://doc.rust-lang.org/reference/type-layout.html#array-layout
+        unsafe {
+            let bytes = mem::transmute::<[u8; 32], [[u8; 16]; 2]>(bytes);
+            U256([u128::from_le_bytes(bytes[0]), u128::from_le_bytes(bytes[1])])
+        }
+    }
 }
 
 pub struct BitIterator<'a> {
@@ -950,3 +960,29 @@ fn tnz_test_mul() {
 
 // TODO: Untested: U256: zero, one, get_bit, add, sub, neg, is_even, invert
 // TODO: Untested: U512: new, from_slice, random, get_bit, interpret
+
+// TODO: These tests are for code I added myself
+fn tnz_from_le_bytes() {
+    let one_bytes: [u8; 32] = [
+        1, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0,
+    ];
+    assert_eq!(U256::from_le_bytes(one_bytes), U256::one());
+
+    const le_bytes: [u8; 32] = [
+        47, 24, 11, 13, 33, 22, 10, 20,
+        0, 40, 0, 0, 0, 0, 0, 0,
+        0, 0, 50, 0, 0, 0, 0, 0,
+        0, 0, 0, 60, 0, 0, 0, 34,
+    ];
+    const val_from_le: U256 = U256::from_le_bytes(le_bytes);
+    let be_bytes: [u8; 32] = [
+        34, 0, 0, 0, 60, 0, 0, 0,
+        0, 0, 0, 0, 0, 50, 0, 0,
+        0, 0, 0, 0, 0, 0, 40, 0,
+        20, 10, 22, 33, 13, 11, 24, 47,
+    ];
+    assert_eq!(val_from_le, U256::from_slice(&be_bytes).unwrap());
+}
