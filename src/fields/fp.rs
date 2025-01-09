@@ -233,12 +233,14 @@ macro_rules! field_impl {
             }
 
             // TODO: Do we actually even need these?
-            fn r() -> Self {
-                Self(U256::from($r))
+            const fn r() -> Self {
+                Self(U256::from_le_bytes($r))
+                // Self(U256::from($r))
             }
 
-            fn r_inv() -> Self {
-                Self(U256::from($rinv))
+            const fn r_inv() -> Self {
+                Self(U256::from_le_bytes($rinv))
+                // Self(U256::from($rinv))
             }
 
             pub fn to_montgomery(mut self) -> Self {
@@ -282,6 +284,11 @@ macro_rules! field_impl {
             pub fn set_bit(&mut self, bit: usize, to: bool) {
                 // TODO: Maintaining set_bit semantics is annoying
                 unimplemented!("TODO: Maitaining `set_bit` semantics is annoying");
+            }
+
+            // TODO: Test my new const initializing functions
+            pub const fn from_le_slice(bytes: &[u8]) -> Self {
+                $name(U256::from_le_slice(&bytes))
             }
         }
 
@@ -459,16 +466,16 @@ field_impl!(
     ],
     0x6586864b4c6911b3c2e1f593efffffff,
     [
-        0xBC1E0A6C0FFFFFFF,
-        0xD7CC17B786468F6E,
-        0x47AFBA497E7EA7A2,
-        0xCF9BB18D1ECE5FD6,
+        0xff, 0xff, 0xff, 0x0f, 0x6c, 0x0a, 0x1e, 0xbc,
+        0x6e, 0x8f, 0x46, 0x86, 0xb7, 0x17, 0xcc, 0xd7,
+        0xa2, 0xa7, 0x7e, 0x7e, 0x49, 0xba, 0xaf, 0x47,
+        0xd6, 0x5f, 0xce, 0x1e, 0x8d, 0xb1, 0x9b, 0xcf,
     ],
     [
-        0xDC5BA0056DB1194E,
-        0x090EF5A9E111EC87,
-        0xC8260DE4AEB85D5D,
-        0x15EBF95182C5551C,
+        0x4e, 0x19, 0xb1, 0x6d, 0x05, 0xa0, 0x5b, 0xdc,
+        0x87, 0xec, 0x11, 0xe1, 0xa9, 0xf5, 0x0e, 0x09,
+        0x5d, 0x5d, 0xb8, 0xae, 0xe4, 0x0d, 0x26, 0xc8,
+        0x1c, 0x55, 0xc5, 0x82, 0x51, 0xf9, 0xeb, 0x15,
     ]
 );
 
@@ -501,16 +508,16 @@ field_impl!(
     ],
     0x9ede7d651eca6ac987d20782e4866389,
     [
-        0xC3DF73E9278302B9,
-        0x687E956E978E3572,
-        0x47AFBA497E7EA7A2,
-        0xCF9BB18D1ECE5FD6,
+        0xb9, 0x02, 0x83, 0x27, 0xe9, 0x73, 0xdf, 0xc3,
+        0x72, 0x35, 0x8e, 0x97, 0x6e, 0x95, 0x7e, 0x68,
+        0xa2, 0xa7, 0x7e, 0x7e, 0x49, 0xba, 0xaf, 0x47,
+        0xd6, 0x5f, 0xce, 0x1e, 0x8d, 0xba, 0x9b, 0xcf,
     ],
     [
-        0xED84884A014AFA37,
-        0xEB2022850278EDF8,
-        0xCF63E9CFB74492D9,
-        0x2E67157159E5C639,
+        0x37, 0xfa, 0x4a, 0x01, 0x4a, 0x88, 0x84, 0xed,
+        0xf8, 0xed, 0x78, 0x02, 0x85, 0x22, 0x20, 0xeb,
+        0xd9, 0x92, 0x44, 0xb7, 0xcf, 0xe9, 0x63, 0xcf,
+        0x39, 0xc6, 0xe5, 0x59, 0x71, 0x15, 0x67, 0x2e,
     ]
 );
 
@@ -607,6 +614,16 @@ fn tnz_basic_mul() {
     let three = Fq::from_str("3").unwrap();
 
     assert_eq!(U256::from(two * three), U256::from(6u64));
+}
+
+#[test]
+fn tnz_from_le_slice() {
+    assert_eq!(Fq::one(), Fq::from_le_slice(&[
+        1, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0,
+    ]));
 }
 
 // TODO: Skip: Passing

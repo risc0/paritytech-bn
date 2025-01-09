@@ -23,6 +23,9 @@ crunchy = "0.2.1"
 lazy_static = { version = "1.4.0", features = ["spin_no_std"] }
 rustc-hex = { version = "2", default-features = false }
 
+# TODO: I think we want to make this generally required, but could feature-gate it
+crypto-bigint = "0.5"
+
 # TODO
 [target.'cfg(all(target_os = "zkvm", target_arch = "riscv32"))'.dependencies]
 bytemuck = "1"
