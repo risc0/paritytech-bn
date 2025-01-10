@@ -723,31 +723,14 @@ fn tnz_from_mont_le_slice() {
     assert_eq!(Fq::one(), Fq::from_mont_le_slice(&mont_one_bytes));
 }
 
-// TODO: So ugly, clean up if I keep
 #[test]
-fn tnz_r_from_bytes() {
-    let r = Fq::from_le_slice(b"\x9d\r\x8f\xc5\x8dC]\xd3=\x0b\xc7\xf5(\xebx\n,Fyxo\xa3nf/\xdf\x07\x9a\xc1w\n\x0e");
-    assert_eq!(r, Fq::r());
-}
-
-#[test]
-fn tnz_from_mont_le_slice_alt() {
-    assert_eq!(Fq::one().to_montgomery(), Fq::r());
-}
-
-#[test]
-fn tnz_r_mul() {
-    assert_eq!(Fq::r(), Fq::one().mul(Fq::r()));
-}
-
-#[test]
-fn tnz_fr_r_mul() {
-    assert_eq!(Fr::r(), Fr::one().mul(Fr::r()));
-}
-
-#[test]
-fn tnz_r_times() {
+fn tnz_r() {
     assert_eq!(Fq::r(), Fq::one() * Fq::r());
+    assert_eq!(Fr::r(), Fr::one() * Fr::r());
+    assert_eq!(Fq::one().to_montgomery(), Fq::r());
+    assert_eq!(Fr::one().to_montgomery(), Fr::r());
+    assert_eq!(Fq::one().from_montgomery(), Fq::r_inv());
+    assert_eq!(Fr::one().from_montgomery(), Fr::r_inv());
 }
 
 #[test]
