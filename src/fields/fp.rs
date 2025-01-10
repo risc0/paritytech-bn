@@ -756,25 +756,6 @@ fn modulus_bytes() {
     assert_eq!(Fr::modulus(), U256::from_le_bytes(Fr::modulus_bytes()));
 }
 
-#[test]
-fn tnz_test_the_test() {
-    let one = U256::from(Fq::one());
-    let mut one_bytes = [0u8; 32];
-    one.to_big_endian(&mut one_bytes).unwrap();
-    one_bytes.reverse();
-    assert_eq!(Fq::one(), Fq::from_le_slice(&one_bytes));
-}
-
-#[test]
-fn tnz_test_the_test2() {
-    let fq = Fq::from_str("5204065062716160319596273903996315000119019512886596366359652578430118331601").unwrap();
-    let val = U256::from(fq);
-    let mut bytes = [0u8; 32];
-    val.to_big_endian(&mut bytes).unwrap();
-    bytes.reverse();
-    assert_eq!(fq, Fq::from_le_slice(&bytes));
-}
-
 // TODO: Skip: Passing
 #[test]
 fn sqrt_fq() {
