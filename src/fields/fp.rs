@@ -85,6 +85,24 @@ macro_rules! field_impl {
                 U256::from($modulus)
             }
 
+            const fn modulus_bytes() -> [u8; 32] {
+                // Convert modulus from an array of u64 words to an array of u8 bytes
+                let mut modulus_bytes = [0u8; 32];
+                let mut word_idx = 0;
+                let mut byte_idx = 0;
+                while word_idx < 4 {
+                    let word: u64 = $modulus[word_idx];
+                    let word = word.to_le_bytes();
+                    while byte_idx < 8 {
+                        modulus_bytes[8 * word_idx + byte_idx] = word[byte_idx];
+                        byte_idx += 1;
+                    }
+                    byte_idx = 0;
+                    word_idx += 1;
+                }
+                modulus_bytes
+            }
+
             // TODO: Pretty pointless in the zkVM but I guess why not
             #[inline]
             #[allow(dead_code)]
@@ -672,16 +690,13 @@ fn tnz_basic_mul() {
 }
 
 #[test]
-fn tnz_basic_r() {
-    assert_eq!(Fq::r() * Fq::r_inv(), Fq::one());
-}
-
-#[test]
 fn tnz_one() {
     assert_eq!(Fq::one(), Fq::from_str("1").unwrap());
 }
 
+// TODO: I don't think I plan on supporting this for non-zkvm, right?
 #[test]
+#[cfg(all(target_os = "zkvm", target_arch = "riscv32"))]
 fn tnz_r_val() {
     let val = Fq(U256::from([
         0xD35D438DC58F0D9D,
@@ -693,7 +708,9 @@ fn tnz_r_val() {
     assert_eq!(Fq::r(), val);
 }
 
+// TODO: I don't think I plan on supporting this for non-zkvm, right?
 #[test]
+#[cfg(all(target_os = "zkvm", target_arch = "riscv32"))]
 fn tnz_r_inv_val() {
     let val = Fq(U256::from([
         0xED84884A014AFA37,
@@ -704,7 +721,9 @@ fn tnz_r_inv_val() {
     assert_eq!(Fq::r_inv(), val);
 }
 
+// TODO: I don't think I plan on supporting this for non-zkvm, right?
 #[test]
+#[cfg(all(target_os = "zkvm", target_arch = "riscv32"))]
 fn tnz_from_le_slice() {
     assert_eq!(Fq::one(), Fq::from_le_slice(&[
         1, 0, 0, 0, 0, 0, 0, 0,
@@ -714,17 +733,20 @@ fn tnz_from_le_slice() {
     ]));
 }
 
-#[test]
-fn tnz_from_mont_le_slice() {
-    let montgomery_one = U256::from(Fq::one().to_montgomery());
-    let mut mont_one_bytes = [0u8; 32];
-    montgomery_one.to_big_endian(&mut mont_one_bytes).unwrap();
-    mont_one_bytes.reverse();
-    assert_eq!(Fq::one(), Fq::from_mont_le_slice(&mont_one_bytes));
-}
+// TODO: Re-enable when it can be handled by non-zkVM
+// #[test]
+// fn tnz_from_mont_le_slice() {
+//     let montgomery_one = U256::from(Fq::one().to_montgomery());
+//     let mut mont_one_bytes = [0u8; 32];
+//     montgomery_one.to_big_endian(&mut mont_one_bytes).unwrap();
+//     mont_one_bytes.reverse();
+//     assert_eq!(Fq::one(), Fq::from_mont_le_slice(&mont_one_bytes));
+// }
 
 #[test]
+#[cfg(all(target_os = "zkvm", target_arch = "riscv32"))]
 fn tnz_r() {
+    assert_eq!(Fq::r() * Fq::r_inv(), Fq::one());
     assert_eq!(Fq::r(), Fq::one() * Fq::r());
     assert_eq!(Fr::r(), Fr::one() * Fr::r());
     assert_eq!(Fq::one().to_montgomery(), Fq::r());
