@@ -321,26 +321,10 @@ macro_rules! field_impl {
                 assert!(bytes.len() == 32);
                 let mont_val = crypto_bigint::U256::from_le_slice(&bytes);
                 // let mont_val = Uint::from_le_slice(&bytes);
-                let r_inv_val = Uint::from_le_slice(&$r);
+                let r_inv_val = Uint::from_le_slice(&$rinv);
                 let prod = mont_val.mul_wide(&r_inv_val);
 
-                // Convert modulus from an array of u64 words to an array of u8 bytes
-                let mut modulus_bytes = [0u8; 32];
-                let mut word_idx = 0;
-                let mut byte_idx = 0;
-                while word_idx < 4 {
-                    let word: u64 = $modulus[word_idx];
-                    let word = word.to_le_bytes();
-                    while byte_idx < 8 {
-                        modulus_bytes[8 * word_idx + byte_idx] = word[byte_idx];
-                        byte_idx += 1;
-                    }
-                    byte_idx = 0;
-                    word_idx += 1;
-                }
-
-                let result = Uint::const_rem_wide(prod, &Uint::from_le_slice(&modulus_bytes));
-                // TODO: Handle result.1
+                let result = Uint::const_rem_wide(prod, &Uint::from_le_slice(&Self::modulus_bytes()));
                 // In the zkVM, the words will be 32-bit and so there will be 8 limbs
                 assert!(crypto_bigint::U256::LIMBS == 8);
                 let as_u32_words = result.0.as_words();
@@ -730,15 +714,21 @@ fn tnz_from_le_slice() {
     ]));
 }
 
-// TODO: This fails, so ... what's wrong?
-// #[test]
-// fn tnz_from_mont_le_slice() {
-//     let montgomery_one = U256::from(Fq::one().to_montgomery());
-//     let mut mont_one_bytes = [0u8; 32];
-//     montgomery_one.to_big_endian(&mut mont_one_bytes).unwrap();
-//     mont_one_bytes.reverse();
-//     assert_eq!(Fq::one(), Fq::from_mont_le_slice(&mont_one_bytes));
-// }
+#[test]
+fn tnz_from_mont_le_slice() {
+    let montgomery_one = U256::from(Fq::one().to_montgomery());
+    let mut mont_one_bytes = [0u8; 32];
+    montgomery_one.to_big_endian(&mut mont_one_bytes).unwrap();
+    mont_one_bytes.reverse();
+    assert_eq!(Fq::one(), Fq::from_mont_le_slice(&mont_one_bytes));
+}
+
+// TODO: So ugly, clean up if I keep
+#[test]
+fn tnz_r_from_bytes() {
+    let r = Fq::from_le_slice(b"\x9d\r\x8f\xc5\x8dC]\xd3=\x0b\xc7\xf5(\xebx\n,Fyxo\xa3nf/\xdf\x07\x9a\xc1w\n\x0e");
+    assert_eq!(r, Fq::r());
+}
 
 #[test]
 fn tnz_from_mont_le_slice_alt() {
