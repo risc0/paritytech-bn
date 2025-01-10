@@ -117,6 +117,14 @@ macro_rules! field_impl {
             pub fn set_bit(&mut self, bit: usize, to: bool) {
                 self.0.set_bit(bit, to);
             }
+
+            // TODO: We're not going to try to support this, right?
+            // pub const fn from_le_slice(bytes: &[u8]) -> Self {
+            // }
+
+            pub const fn from_mont_le_slice(bytes: &[u8]) -> Self {
+                $name(U256::from_le_slice(&bytes))
+            }
         }
 
         impl FieldElement for $name {
@@ -197,6 +205,7 @@ macro_rules! field_impl {
     }
 }
 
+// TODO: Remove r / one redundancy
 #[cfg(all(target_os = "zkvm", target_arch = "riscv32"))]
 macro_rules! field_impl {
     ($name:ident, $modulus:expr, $rsquared:expr, $rcubed:expr, $one:expr, $inv:expr, $r:expr, $rinv:expr) => {
@@ -329,12 +338,10 @@ macro_rules! field_impl {
                 unimplemented!("TODO: Maitaining `set_bit` semantics is annoying");
             }
 
-            // TODO: Test my new const initializing functions
             pub const fn from_le_slice(bytes: &[u8]) -> Self {
                 $name(U256::from_le_slice(&bytes))
             }
 
-            // TODO: Test my new const initializing functions
             pub const fn from_mont_le_slice(bytes: &[u8]) -> Self {
                 assert!(bytes.len() == 32);
                 let mont_val = crypto_bigint::U256::from_le_slice(&bytes);
@@ -734,19 +741,37 @@ fn tnz_from_le_slice() {
 }
 
 // TODO: Re-enable when it can be handled by non-zkVM
-// #[test]
-// fn tnz_from_mont_le_slice() {
-//     let montgomery_one = U256::from(Fq::one().to_montgomery());
-//     let mut mont_one_bytes = [0u8; 32];
-//     montgomery_one.to_big_endian(&mut mont_one_bytes).unwrap();
-//     mont_one_bytes.reverse();
-//     assert_eq!(Fq::one(), Fq::from_mont_le_slice(&mont_one_bytes));
-// }
+#[test]
+fn tnz_from_mont_le_slice() {
+    // Test reading in the known Montgomery form of 1 in Fq and Fr
+    let montgomery_one_fq = U256::from([
+        0xd35d438dc58f0d9d,
+        0xa78eb28f5c70b3d,
+        0x666ea36f7879462c,
+        0xe0a77c19a07df2f,
+    ]);
+    let mut mont_one_bytes = [0u8; 32];
+    montgomery_one_fq.to_big_endian(&mut mont_one_bytes).unwrap();
+    mont_one_bytes.reverse();
+    assert_eq!(Fq::one(), Fq::from_mont_le_slice(&mont_one_bytes));
+
+    let montgomery_one_fr = U256::from([
+        0xac96341c4ffffffb,
+        0x36fc76959f60cd29,
+        0x666ea36f7879462e,
+        0xe0a77c19a07df2f,
+    ]);
+    let mut mont_one_bytes = [0u8; 32];
+    montgomery_one_fr.to_big_endian(&mut mont_one_bytes).unwrap();
+    mont_one_bytes.reverse();
+    assert_eq!(Fr::one(), Fr::from_mont_le_slice(&mont_one_bytes));
+}
 
 #[test]
 #[cfg(all(target_os = "zkvm", target_arch = "riscv32"))]
 fn tnz_r() {
     assert_eq!(Fq::r() * Fq::r_inv(), Fq::one());
+    assert_eq!(Fr::r() * Fr::r_inv(), Fr::one());
     assert_eq!(Fq::r(), Fq::one() * Fq::r());
     assert_eq!(Fr::r(), Fr::one() * Fr::r());
     assert_eq!(Fq::one().to_montgomery(), Fq::r());
