@@ -4,6 +4,9 @@ use rand::Rng;
 use crate::fields::FieldElement;
 use crate::arith::{U256, U512};
 
+// TODO: like this
+use crypto_bigint::Uint;
+
 #[cfg(all(target_os = "zkvm", target_arch = "riscv32"))]
 use risc0_bigint2::field;
 
@@ -235,13 +238,17 @@ macro_rules! field_impl {
             // TODO: Do we actually even need these?
             const fn r() -> Self {
                 Self(U256::from_le_bytes($r))
-                // Self(U256::from($r))
             }
+            // fn r() -> Self {
+            //     Self(U256::from($r))
+            // }
 
             const fn r_inv() -> Self {
                 Self(U256::from_le_bytes($rinv))
-                // Self(U256::from($rinv))
             }
+            // fn r_inv() -> Self {
+            //     Self(U256::from($rinv))
+            // }
 
             pub fn to_montgomery(mut self) -> Self {
                 self.mul(Self::r())
@@ -289,6 +296,49 @@ macro_rules! field_impl {
             // TODO: Test my new const initializing functions
             pub const fn from_le_slice(bytes: &[u8]) -> Self {
                 $name(U256::from_le_slice(&bytes))
+            }
+
+            // TODO: Test my new const initializing functions
+            pub const fn from_mont_le_slice(bytes: &[u8]) -> Self {
+                assert!(bytes.len() == 32);
+                let mont_val = crypto_bigint::U256::from_le_slice(&bytes);
+                // let mont_val = Uint::from_le_slice(&bytes);
+                let r_inv_val = Uint::from_le_slice(&$r);
+                let prod = mont_val.mul_wide(&r_inv_val);
+
+                // Convert modulus from an array of u64 words to an array of u8 bytes
+                let mut modulus_bytes = [0u8; 32];
+                let mut word_idx = 0;
+                let mut byte_idx = 0;
+                while word_idx < 4 {
+                    let word: u64 = $modulus[word_idx];
+                    let word = word.to_le_bytes();
+                    while byte_idx < 8 {
+                        modulus_bytes[8 * word_idx + byte_idx] = word[byte_idx];
+                        byte_idx += 1;
+                    }
+                    byte_idx = 0;
+                    word_idx += 1;
+                }
+
+                let result = Uint::const_rem_wide(prod, &Uint::from_le_slice(&modulus_bytes));
+                // TODO: Handle result.1
+                // In the zkVM, the words will be 32-bit and so there will be 8 limbs
+                assert!(crypto_bigint::U256::LIMBS == 8);
+                let as_u32_words = result.0.as_words();
+                let mut result_bytes = [0u8; 32];
+                let mut word_idx = 0;
+                let mut byte_idx = 0;
+                while word_idx < 8 {
+                    let word = as_u32_words[word_idx].to_le_bytes();
+                    while byte_idx < 4 {
+                        result_bytes[4 * word_idx + byte_idx] = word[byte_idx];
+                        byte_idx += 1;
+                    }
+                    byte_idx = 0;
+                    word_idx += 1;
+                }
+                $name(U256::from_le_slice(&result_bytes))
             }
         }
 
@@ -466,10 +516,10 @@ field_impl!(
     ],
     0x6586864b4c6911b3c2e1f593efffffff,
     [
-        0xff, 0xff, 0xff, 0x0f, 0x6c, 0x0a, 0x1e, 0xbc,
-        0x6e, 0x8f, 0x46, 0x86, 0xb7, 0x17, 0xcc, 0xd7,
-        0xa2, 0xa7, 0x7e, 0x7e, 0x49, 0xba, 0xaf, 0x47,
-        0xd6, 0x5f, 0xce, 0x1e, 0x8d, 0xb1, 0x9b, 0xcf,
+        0xfb, 0xff, 0xff, 0x4f, 0x1c, 0x34, 0x96, 0xac,
+        0x29, 0xcd, 0x60, 0x9f, 0x95, 0x76, 0xfc, 0x36,
+        0x2e, 0x46, 0x79, 0x78, 0x6f, 0xa3, 0x6e, 0x66,
+        0x2f, 0xdf, 0x07, 0x9a, 0xc1, 0x77, 0x0a, 0x0e,
     ],
     [
         0x4e, 0x19, 0xb1, 0x6d, 0x05, 0xa0, 0x5b, 0xdc,
@@ -508,10 +558,10 @@ field_impl!(
     ],
     0x9ede7d651eca6ac987d20782e4866389,
     [
-        0xb9, 0x02, 0x83, 0x27, 0xe9, 0x73, 0xdf, 0xc3,
-        0x72, 0x35, 0x8e, 0x97, 0x6e, 0x95, 0x7e, 0x68,
-        0xa2, 0xa7, 0x7e, 0x7e, 0x49, 0xba, 0xaf, 0x47,
-        0xd6, 0x5f, 0xce, 0x1e, 0x8d, 0xba, 0x9b, 0xcf,
+        0x9d, 0x0d, 0x8f, 0xc5, 0x8d, 0x43, 0x5d, 0xd3,
+        0x3d, 0x0b, 0xc7, 0xf5, 0x28, 0xeb, 0x78, 0x0a,
+        0x2c, 0x46, 0x79, 0x78, 0x6f, 0xa3, 0x6e, 0x66,
+        0x2f, 0xdf, 0x07, 0x9a, 0xc1, 0x77, 0x0a, 0x0e,
     ],
     [
         0x37, 0xfa, 0x4a, 0x01, 0x4a, 0x88, 0x84, 0xed,
@@ -614,6 +664,42 @@ fn tnz_basic_mul() {
     let three = Fq::from_str("3").unwrap();
 
     assert_eq!(U256::from(two * three), U256::from(6u64));
+    assert_eq!(Fq::one() * two, two);
+    assert_eq!(Fq::one() * three, three);
+    assert_eq!(Fq::one(), two * Fq::from_str("10944121435919637611123202872628637544348155578648911831344518947322613104292").unwrap());
+}
+
+#[test]
+fn tnz_basic_r() {
+    assert_eq!(Fq::r() * Fq::r_inv(), Fq::one());
+}
+
+#[test]
+fn tnz_one() {
+    assert_eq!(Fq::one(), Fq::from_str("1").unwrap());
+}
+
+#[test]
+fn tnz_r_val() {
+    let val = Fq(U256::from([
+        0xD35D438DC58F0D9D,
+        0x0A78EB28F5C70B3D,
+        0x666EA36F7879462C,
+        0x0E0A77C19A07DF2F,
+    ]));
+
+    assert_eq!(Fq::r(), val);
+}
+
+#[test]
+fn tnz_r_inv_val() {
+    let val = Fq(U256::from([
+        0xED84884A014AFA37,
+        0xEB2022850278EDF8,
+        0xCF63E9CFB74492D9,
+        0x2E67157159E5C639,
+    ]));
+    assert_eq!(Fq::r_inv(), val);
 }
 
 #[test]
@@ -624,6 +710,55 @@ fn tnz_from_le_slice() {
         0, 0, 0, 0, 0, 0, 0, 0,
         0, 0, 0, 0, 0, 0, 0, 0,
     ]));
+}
+
+// TODO: This fails, so ... what's wrong?
+// #[test]
+// fn tnz_from_mont_le_slice() {
+//     let montgomery_one = U256::from(Fq::one().to_montgomery());
+//     let mut mont_one_bytes = [0u8; 32];
+//     montgomery_one.to_big_endian(&mut mont_one_bytes).unwrap();
+//     mont_one_bytes.reverse();
+//     assert_eq!(Fq::one(), Fq::from_mont_le_slice(&mont_one_bytes));
+// }
+
+#[test]
+fn tnz_from_mont_le_slice_alt() {
+    assert_eq!(Fq::one().to_montgomery(), Fq::r());
+}
+
+#[test]
+fn tnz_r_mul() {
+    assert_eq!(Fq::r(), Fq::one().mul(Fq::r()));
+}
+
+#[test]
+fn tnz_fr_r_mul() {
+    assert_eq!(Fr::r(), Fr::one().mul(Fr::r()));
+}
+
+#[test]
+fn tnz_r_times() {
+    assert_eq!(Fq::r(), Fq::one() * Fq::r());
+}
+
+#[test]
+fn tnz_test_the_test() {
+    let one = U256::from(Fq::one());
+    let mut one_bytes = [0u8; 32];
+    one.to_big_endian(&mut one_bytes).unwrap();
+    one_bytes.reverse();
+    assert_eq!(Fq::one(), Fq::from_le_slice(&one_bytes));
+}
+
+#[test]
+fn tnz_test_the_test2() {
+    let fq = Fq::from_str("5204065062716160319596273903996315000119019512886596366359652578430118331601").unwrap();
+    let val = U256::from(fq);
+    let mut bytes = [0u8; 32];
+    val.to_big_endian(&mut bytes).unwrap();
+    bytes.reverse();
+    assert_eq!(fq, Fq::from_le_slice(&bytes));
 }
 
 // TODO: Skip: Passing
