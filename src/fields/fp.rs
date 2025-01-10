@@ -740,7 +740,6 @@ fn tnz_from_le_slice() {
     ]));
 }
 
-// TODO: Re-enable when it can be handled by non-zkVM
 #[test]
 fn tnz_from_mont_le_slice() {
     // Test reading in the known Montgomery form of 1 in Fq and Fr

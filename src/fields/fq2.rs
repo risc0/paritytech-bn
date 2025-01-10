@@ -95,6 +95,16 @@ impl Fq2 {
     pub fn imaginary(&self) -> &Fq {
         &self.c1
     }
+
+    pub const fn from_mont_le_slice(bytes: &[u8]) -> Self {
+        // c0 then c1 order
+        assert!(bytes.len() == 64);
+        let (lo, hi) = bytes.split_at(32);
+        Fq2 {
+            c0: Fq::from_mont_le_slice(lo),
+            c1: Fq::from_mont_le_slice(hi),
+        }
+    }
 }
 
 impl FieldElement for Fq2 {
@@ -329,4 +339,27 @@ fn sqrt_fq2() {
     assert!(
         Fq2::new(Fq::from_str("1").unwrap(), Fq::from_str("2").unwrap()).sqrt().is_none()
     );
+}
+
+#[test]
+fn tnz_from_mont_le_slice() {
+    // Test reading in the known Montgomery form of 1 in Fq and Fr
+    // TODO: Might be a nicer test?
+    let montgomery_one_fq = U256::from([
+        0xd35d438dc58f0d9d,
+        0xa78eb28f5c70b3d,
+        0x666ea36f7879462c,
+        0xe0a77c19a07df2f,
+    ]);
+    let mut mont_one_fq_bytes = [0u8; 32];
+    montgomery_one_fq.to_big_endian(&mut mont_one_fq_bytes).unwrap();
+    mont_one_fq_bytes.reverse();
+    let mut mont_one_fq2_bytes = [0u8; 64];
+    let mut mont_i_fq2_bytes = [0u8; 64];
+    for idx in 0..32 {
+        mont_one_fq2_bytes[idx] = mont_one_fq_bytes[idx];
+        mont_i_fq2_bytes[idx + 32] = mont_one_fq_bytes[idx];
+    }
+    assert_eq!(Fq2::one(), Fq2::from_mont_le_slice(&mont_one_fq2_bytes));
+    assert_eq!(Fq2::i(), Fq2::from_mont_le_slice(&mont_i_fq2_bytes));
 }
