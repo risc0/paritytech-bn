@@ -273,6 +273,24 @@ macro_rules! field_impl {
                 U256::from($modulus)
             }
 
+            const fn modulus_bytes() -> [u8; 32] {
+                // Convert modulus from an array of u64 words to an array of u8 bytes
+                let mut modulus_bytes = [0u8; 32];
+                let mut word_idx = 0;
+                let mut byte_idx = 0;
+                while word_idx < 4 {
+                    let word: u64 = $modulus[word_idx];
+                    let word = word.to_le_bytes();
+                    while byte_idx < 8 {
+                        modulus_bytes[8 * word_idx + byte_idx] = word[byte_idx];
+                        byte_idx += 1;
+                    }
+                    byte_idx = 0;
+                    word_idx += 1;
+                }
+                modulus_bytes
+            }
+
             #[inline]
             #[allow(dead_code)]
             pub fn inv(&self) -> u128 {
@@ -740,6 +758,12 @@ fn tnz_fr_r_mul() {
 #[test]
 fn tnz_r_times() {
     assert_eq!(Fq::r(), Fq::one() * Fq::r());
+}
+
+#[test]
+fn modulus_bytes() {
+    assert_eq!(Fq::modulus(), U256::from_le_bytes(Fq::modulus_bytes()));
+    assert_eq!(Fr::modulus(), U256::from_le_bytes(Fr::modulus_bytes()));
 }
 
 #[test]
