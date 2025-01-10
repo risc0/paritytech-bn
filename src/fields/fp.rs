@@ -744,6 +744,7 @@ fn tnz_from_le_slice() {
 #[test]
 fn tnz_from_mont_le_slice() {
     // Test reading in the known Montgomery form of 1 in Fq and Fr
+    // TODO: Might be a nicer test?
     let montgomery_one_fq = U256::from([
         0xd35d438dc58f0d9d,
         0xa78eb28f5c70b3d,

@@ -47,6 +47,9 @@ impl Fr {
             .map_err(|_| FieldError::InvalidSliceLength) // todo: maybe more sensful error handling
             .map(|x| Fr::new_mul_factor(x))
     }
+    pub const fn from_mont_le_slice(slice: &[u8]) -> Self {
+        Fr(fields::Fr::from_mont_le_slice(slice))
+    }
     #[cfg(not(all(target_os = "zkvm", target_arch = "riscv32")))]
     pub fn to_big_endian(&self, slice: &mut [u8]) -> Result<(), FieldError> {
         self.0
@@ -175,6 +178,9 @@ impl Fq {
             .map_err(|_| FieldError::InvalidSliceLength) // todo: maybe more sensful error handling
             .and_then(|x| fields::Fq::new(x).ok_or(FieldError::NotMember))
             .map(|x| Fq(x))
+    }
+    pub const fn from_mont_le_slice(slice: &[u8]) -> Self {
+        Fq(fields::Fq::from_mont_le_slice(slice))
     }
     #[cfg(not(all(target_os = "zkvm", target_arch = "riscv32")))]
     pub fn to_big_endian(&self, slice: &mut [u8]) -> Result<(), FieldError> {
@@ -1028,6 +1034,32 @@ mod tests {
         let val = Fq2::from_slice(&example).unwrap();
         assert_eq!(val.real(), Fq::from_str("6350874878119819312338956282401532409788428879151445726012394534686998597021").unwrap());
         assert_eq!(val.imaginary(), Fq::from_str("5").unwrap());
+    }
+
+    #[test]
+    fn tnz_from_mont_le_slice() {
+        // TODO: Might be a nicer test?
+        let montgomery_one_fq = crate::arith::U256::from([
+            0xd35d438dc58f0d9d,
+            0xa78eb28f5c70b3d,
+            0x666ea36f7879462c,
+            0xe0a77c19a07df2f,
+        ]);
+        let mut mont_one_bytes = [0u8; 32];
+        montgomery_one_fq.to_big_endian(&mut mont_one_bytes).unwrap();
+        mont_one_bytes.reverse();
+        assert_eq!(Fq::one(), Fq::from_mont_le_slice(&mont_one_bytes));
+
+        let montgomery_one_fr = crate::arith::U256::from([
+            0xac96341c4ffffffb,
+            0x36fc76959f60cd29,
+            0x666ea36f7879462e,
+            0xe0a77c19a07df2f,
+        ]);
+        let mut mont_one_bytes = [0u8; 32];
+        montgomery_one_fr.to_big_endian(&mut mont_one_bytes).unwrap();
+        mont_one_bytes.reverse();
+        assert_eq!(Fr::one(), Fr::from_mont_le_slice(&mont_one_bytes));
     }
 }
 
