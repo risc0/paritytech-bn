@@ -494,6 +494,11 @@ impl AffineG1 {
     pub fn from_jacobian(g1: G1) -> Option<Self> {
         g1.0.to_affine().map(|x| AffineG1(x))
     }
+
+    // TODO: Test
+    pub const fn from_mont_le_slice(bytes: &[u8]) -> Self {
+        AffineG1(groups::AffineG1::from_mont_le_slice(bytes))
+    }
 }
 
 impl From<AffineG1> for G1 {
@@ -695,6 +700,11 @@ impl AffineG2 {
 
     pub fn from_jacobian(g2: G2) -> Option<Self> {
         g2.0.to_affine().map(|x| AffineG2(x))
+    }
+
+    // TODO: Test
+    pub const fn from_mont_le_slice(bytes: &[u8]) -> Self {
+        AffineG2(groups::AffineG2::from_mont_le_slice(bytes))
     }
 }
 
