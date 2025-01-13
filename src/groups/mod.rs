@@ -405,6 +405,17 @@ pub type G1 = G<G1Params>;
 
 pub type AffineG1 = AffineG<G1Params>;
 
+impl AffineG1 {
+    pub const fn from_mont_le_slice(bytes: &[u8]) -> Self {
+        assert!(bytes.len() == 64);
+        let (lo, hi) = bytes.split_at(32);
+        AffineG1 {
+            x: Fq::from_mont_le_slice(lo),
+            y: Fq::from_mont_le_slice(hi)
+        }
+    }
+}
+
 #[derive(Debug)]
 pub struct G2Params;
 
@@ -474,6 +485,17 @@ impl GroupParams for G2Params {
 pub type G2 = G<G2Params>;
 
 pub type AffineG2 = AffineG<G2Params>;
+
+impl AffineG2 {
+    pub const fn from_mont_le_slice(bytes: &[u8]) -> Self {
+        assert!(bytes.len() == 128);
+        let (lo, hi) = bytes.split_at(64);
+        AffineG2 {
+            x: Fq2::from_mont_le_slice(lo),
+            y: Fq2::from_mont_le_slice(hi)
+        }
+    }
+}
 
 #[cfg(test)]
 mod tests;
@@ -1168,4 +1190,49 @@ fn test_y_at_point_at_infinity() {
 
     assert!(G2::zero().y == Fq2::one());
     assert!((-G2::zero()).y == Fq2::one());
+}
+
+
+#[test]
+fn tnz_from_le_slice() {
+    // TODO: Fix the test to have x and y distinguished
+    // TODO: And maybe use points actually on the curves
+    let pt = AffineG1::from_mont_le_slice(&[
+        1, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0,
+        1, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0,
+    ]);
+    let from_mont_one = Fq::from_str("20988524275117001072002809824448087578619730785600314334253784976379291040311").unwrap();
+    assert_eq!(pt.x, from_mont_one);
+    assert_eq!(pt.y, from_mont_one);
+
+    let pt = AffineG2::from_mont_le_slice(&[
+        1, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0,
+        1, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0,
+    ]);
+    let from_mont_one = Fq2::new(
+        Fq::from_str("20988524275117001072002809824448087578619730785600314334253784976379291040311").unwrap(),
+        Fq::zero()
+    );
+    assert_eq!(pt.x, from_mont_one);
+    assert_eq!(pt.y, from_mont_one);
 }
