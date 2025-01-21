@@ -184,7 +184,8 @@ impl Mul for Fq2 {
         let result_mut: &mut [[u32; 8]; 2] = unsafe {
             bytemuck::cast_mut(result.assume_init_mut())
         };
-        field::extfieldmul_256(&lhs, &rhs, &irred_poly, &prime, result_mut);
+        // TODO: Use specialized x^2 + 1 mul
+        field::extfield_deg2_mul_256(&lhs, &rhs, &irred_poly, &prime, result_mut);
         let result = unsafe { result.assume_init() };
         Fq2 {
             c0: Fq::new(U256(result[0])).unwrap(),
