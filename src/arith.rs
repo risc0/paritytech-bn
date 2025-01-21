@@ -395,7 +395,7 @@ impl U256 {
                 carry_needed = false;
             }
         }
-        assert!(!carry_needed, "Cannot use 0 for modulus in `mul`"); 
+        assert!(!carry_needed, "Cannot use 0 for modulus in `mul`");
         let mut r_inv = [0u32; 8];
         field::modinv_256(&r, prime, &mut r_inv);
 
@@ -971,10 +971,11 @@ fn tnz_test_mul() {
     assert_eq!(lhs, expected);
 }
 
-// TODO: Untested: U256: zero, one, get_bit, add, sub, neg, is_even, invert
-// TODO: Untested: U512: new, from_slice, random, get_bit, interpret
+// TODO: Determine how much testing is needed. Places to look:
+// U256: zero, one, get_bit, add, sub, neg, is_even, invert
+// U512: new, from_slice, random, get_bit, interpret
+// TODO: Rename, sort, etc the `tnz` tests
 
-// TODO: These tests are for code I added myself
 fn tnz_from_le_bytes() {
     let one_bytes: [u8; 32] = [
         1, 0, 0, 0, 0, 0, 0, 0,
