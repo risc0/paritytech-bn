@@ -495,7 +495,6 @@ impl AffineG1 {
         g1.0.to_affine().map(|x| AffineG1(x))
     }
 
-    // TODO: Test
     pub const fn from_mont_le_slice(bytes: &[u8]) -> Self {
         AffineG1(groups::AffineG1::from_mont_le_slice(bytes))
     }
@@ -702,7 +701,6 @@ impl AffineG2 {
         g2.0.to_affine().map(|x| AffineG2(x))
     }
 
-    // TODO: Test
     pub const fn from_mont_le_slice(bytes: &[u8]) -> Self {
         AffineG2(groups::AffineG2::from_mont_le_slice(bytes))
     }
@@ -1048,7 +1046,7 @@ mod tests {
 
     #[test]
     fn tnz_from_mont_le_slice() {
-        // TODO: Might be a nicer test?
+        // This tests that reading in the Montgomery forms of 1 gives 1
         let montgomery_one_fq = crate::arith::U256::from([
             0xd35d438dc58f0d9d,
             0xa78eb28f5c70b3d,
