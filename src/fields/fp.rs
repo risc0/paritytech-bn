@@ -650,12 +650,11 @@ pub fn const_fq(i: [u64; 4]) -> Fq {
     Fq(U256::from(i)).from_montgomery()
 }
 
-// TODO: Skip: Passing
 #[test]
 fn test_rsquared() {
     let rng = &mut ::rand::thread_rng();
 
-    for _ in 0..2 {  // TODO: From 1000
+    for _ in 0..2 {
         let a = Fr::random(rng);
         let b: U256 = a.into();
         let c = Fr::new(b).unwrap();
@@ -663,7 +662,7 @@ fn test_rsquared() {
         assert_eq!(a, c);
     }
 
-    for _ in 0..2 {  // TODO: From 1000
+    for _ in 0..2 {
         let a = Fq::random(rng);
         let b: U256 = a.into();
         let c = Fq::new(b).unwrap();
@@ -672,7 +671,6 @@ fn test_rsquared() {
     }
 }
 
-// TODO: Skip: Passing
 #[test]
 fn tnz_simple_square() {
     // TODO: Based on sqrt_fq
@@ -682,7 +680,6 @@ fn tnz_simple_square() {
     assert_eq!(fq1 * fq1, fq2);
 }
 
-// TODO: Skip: Passing
 #[test]
 fn tnz_basic_mul() {
     // let two = Fq::from(U256::from(2u64));
@@ -786,7 +783,6 @@ fn modulus_bytes() {
     assert_eq!(Fr::modulus(), U256::from_le_bytes(Fr::modulus_bytes()));
 }
 
-// TODO: Skip: Passing
 #[test]
 fn sqrt_fq() {
     // from zcash test_proof.cpp

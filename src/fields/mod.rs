@@ -49,25 +49,21 @@ pub trait FieldElement
 #[cfg(test)]
 mod tests;
 
-// TODO: Skip: Passing
 #[test]
 fn test_fr() {
     tests::field_trials::<Fr>();
 }
 
-// TODO: Skip: Passing
 #[test]
 fn test_fq() {
     tests::field_trials::<Fq>();
 }
 
-// TODO: Skip: Passing
 #[test]
 fn test_fq2() {
     tests::field_trials::<Fq2>();
 }
 
-// TODO: Skip: Passing
 #[test]
 fn test_str() {
     assert_eq!(
@@ -84,21 +80,16 @@ fn test_str() {
     );
 }
 
-// TODO: Skip: Passing
 #[test]
 fn test_fq6() {
     tests::field_trials::<Fq6>();
 }
 
-// TODO: Skip: Passing
-// TODO: Note: A little slow
 #[test]
 fn test_fq12() {
     tests::field_trials::<Fq12>();
 }
 
-// TODO: Skip: Passing
-// TODO: Note: A little slow
 #[test]
 fn fq12_test_vector() {
     let start = Fq12::new(
@@ -235,8 +226,6 @@ fn fq12_test_vector() {
     assert_eq!(finally, next);
 }
 
-// TODO: Skip: Passing
-// TODO: Note: a little bit slow
 #[test]
 fn test_cyclotomic_exp() {
     let orig = Fq12::new(

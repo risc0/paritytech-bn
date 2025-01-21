@@ -697,7 +697,6 @@ fn mul_reduce(this: &mut [u128; 2], by: &[u128; 2], modulus: &[u128; 2], inv: u1
     this.copy_from_slice(&res[2..]);
 }
 
-// TODO: Skip: Passing
 #[test]
 fn setting_bits() {
     let rng = &mut ::rand::thread_rng();
@@ -712,7 +711,6 @@ fn setting_bits() {
     assert_eq!(a, e);
 }
 
-// TODO: Skip: Passing
 #[test]
 fn from_slice() {
     let tst = U256::one();
@@ -724,7 +722,6 @@ fn from_slice() {
     assert_eq!(num, tst);
 }
 
-// TODO: Skip: Passing
 #[test]
 fn to_big_endian() {
     let num = U256::one();
@@ -741,7 +738,6 @@ fn to_big_endian() {
     );
 }
 
-// TODO: Skip: Passing
 #[test]
 fn testing_divrem() {
     let rng = &mut ::rand::thread_rng();
@@ -753,7 +749,7 @@ fn testing_divrem() {
         0x30644e72e131a029,
     ]);
 
-    for _ in 0..2 {  // TODO: Modified from 100
+    for _ in 0..2 {
         let c0 = U256::random(rng, &modulo);
         let c1 = U256::random(rng, &modulo);
 

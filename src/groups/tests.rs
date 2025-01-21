@@ -3,7 +3,7 @@ use crate::fields::{FieldElement, Fr};
 use rand::Rng;
 
 fn random_test_addition<G: GroupElement, R: Rng>(rng: &mut R) {
-    for _ in 0..2 {  // TODO: Was 50
+    for _ in 0..2 {
         let r1 = G::random(rng);
         let r2 = G::random(rng);
         let r3 = G::random(rng);
@@ -14,7 +14,7 @@ fn random_test_addition<G: GroupElement, R: Rng>(rng: &mut R) {
 }
 
 fn random_test_doubling<G: GroupElement, R: Rng>(rng: &mut R) {
-    for _ in 0..2 {  // TODO: Was 50
+    for _ in 0..2 {
         let r1 = G::random(rng);
         let r2 = G::random(rng);
         let ti = Fr::from_str("2").unwrap().inverse().unwrap();
@@ -25,7 +25,7 @@ fn random_test_doubling<G: GroupElement, R: Rng>(rng: &mut R) {
 }
 
 fn random_test_dh<G: GroupElement, R: Rng>(rng: &mut R) {
-    for _ in 0..2 {  // TODO: Was 50
+    for _ in 0..2 {
         let alice_sk = Fr::random(rng);
         let bob_sk = Fr::random(rng);
 
@@ -40,7 +40,7 @@ fn random_test_dh<G: GroupElement, R: Rng>(rng: &mut R) {
 }
 
 fn random_test_equality<G: GroupElement, R: Rng>(rng: &mut R) {
-    for _ in 0..2 {  // TODO: Was 50
+    for _ in 0..2 {
         let begin = G::random(rng);
 
         let mut acc = begin;
@@ -52,7 +52,7 @@ fn random_test_equality<G: GroupElement, R: Rng>(rng: &mut R) {
         let c = Fr::random(rng);
         let d = G::random(rng);
 
-        for _ in 0..2 {  // TODO: Was 10
+        for _ in 0..2 {
             acc = acc * a;
             acc = -acc;
             acc = acc + b;
@@ -68,7 +68,7 @@ fn random_test_equality<G: GroupElement, R: Rng>(rng: &mut R) {
         let ci = c.inverse().unwrap();
         let ti = Fr::from_str("2").unwrap().inverse().unwrap();
 
-        for _ in 0..2 {  // TODO: Was 10
+        for _ in 0..2 {
             acc = acc * ti;
             acc = acc + d;
             acc = -acc;

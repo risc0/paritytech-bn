@@ -505,7 +505,6 @@ fn test_g1() {
     tests::group_trials::<G1>();
 }
 
-// TODO: Slow test; restore if possible
 #[test]
 fn test_g2() {
     tests::group_trials::<G2>();
@@ -518,7 +517,7 @@ fn test_affine_jacobian_conversion() {
     assert!(G1::zero().to_affine().is_none());
     assert!(G2::zero().to_affine().is_none());
 
-    for _ in 0..2 {  // TODO: was 1000
+    for _ in 0..2 {
         let a = G1::one() * Fr::random(rng);
         let b = a.to_affine().unwrap();
         let c = b.to_jacobian();
@@ -526,7 +525,7 @@ fn test_affine_jacobian_conversion() {
         assert_eq!(a, c);
     }
 
-    for _ in 0..2 {  // TODO: Was 1000
+    for _ in 0..2 {
         let a = G2::one() * Fr::random(rng);
         let b = a.to_affine().unwrap();
         let c = b.to_jacobian();
@@ -1021,7 +1020,6 @@ fn test_reduced_pairing() {
     assert_eq!(expected, gt);
 }
 
-// TODO: Skip: Passing
 #[test]
 fn predefined_pair() {
     let g1 = AffineG1::new(
@@ -1063,7 +1061,6 @@ fn test_batch_bilinearity_empty() {
     assert_eq!(r, Fq12::one());
 }
 
-// TODO: Note: A little slow
 #[test]
 fn test_batch_bilinearity_one() {
     use rand::{SeedableRng, rngs::StdRng};
@@ -1084,7 +1081,6 @@ fn test_batch_bilinearity_one() {
     assert_eq!(b, c);
 }
 
-// TODO: Slow test; restore if possible
 #[test]
 fn test_batch_bilinearity_fifty() {
     use rand::{SeedableRng, rngs::StdRng};
@@ -1101,7 +1097,7 @@ fn test_batch_bilinearity_fifty() {
     let mut sp_vec : Vec<G1> = Vec::new();
     let mut sq_vec : Vec<G2> = Vec::new();
 
-    for _ in 0..2 {  // TODO: Was 50
+    for _ in 0..2 {
         let p = G1::random(&mut rng);
         let q = G2::random(&mut rng);
         let s = Fr::random(&mut rng);
@@ -1117,7 +1113,6 @@ fn test_batch_bilinearity_fifty() {
     assert_eq!(b_batch, c_batch);
 }
 
-// TODO: Slow test; restore if possible
 #[test]
 fn test_bilinearity() {
     use rand::{SeedableRng, rngs::StdRng};
@@ -1129,7 +1124,7 @@ fn test_bilinearity() {
     ];
     let mut rng = StdRng::from_seed(seed);
 
-    for _ in 0..2 {  // TODO: Was 50
+    for _ in 0..2 {
         let p = G1::random(&mut rng);
         let q = G2::random(&mut rng);
         let s = Fr::random(&mut rng);
@@ -1150,7 +1145,6 @@ fn test_bilinearity() {
     }
 }
 
-// TODO: Skip: Passing
 #[test]
 fn internals() {
     let test_p = G1::one();
@@ -1163,7 +1157,6 @@ fn internals() {
     assert_eq!(affine.x(), &Fq::one());
 }
 
-// TODO: Skip: Passing
 #[test]
 fn affine_fail() {
     let res = AffineG1::new(Fq::one(), Fq::one());
@@ -1173,7 +1166,6 @@ fn affine_fail() {
     );
 }
 
-// TODO: Skip: Passing
 #[test]
 fn affine_ok() {
     let res = AffineG1::new(Fq::one(), G1Params::coeff_b());

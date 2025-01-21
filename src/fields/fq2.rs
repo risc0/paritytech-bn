@@ -293,7 +293,6 @@ impl Fq2 {
     }
 }
 
-// TODO: Skip: Passing
 #[test]
 fn tnz_simple_square() {
     // based on sqrt_fq2
@@ -314,7 +313,6 @@ fn tnz_simple_times() {
     assert_eq!(Fq2::one() * Fq2::one(), Fq2::one());
 }
 
-// TODO: Skip: Passing
 #[test]
 fn sqrt_fq2() {
     // from zcash test_proof.cpp
