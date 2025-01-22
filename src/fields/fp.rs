@@ -4,7 +4,8 @@ use rand::Rng;
 use crate::fields::FieldElement;
 use crate::arith::{U256, U512};
 
-// TODO: like this
+// Used for doing `const` Montgomery form conversions
+#[cfg(all(target_os = "zkvm", target_arch = "riscv32"))]
 use crypto_bigint::Uint;
 
 #[cfg(all(target_os = "zkvm", target_arch = "riscv32"))]
