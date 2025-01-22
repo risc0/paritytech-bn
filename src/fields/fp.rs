@@ -104,7 +104,6 @@ macro_rules! field_impl {
                 modulus_bytes
             }
 
-            // TODO: Pretty pointless in the zkVM but I guess why not
             #[inline]
             #[allow(dead_code)]
             pub fn inv(&self) -> u128 {
@@ -218,14 +217,14 @@ macro_rules! field_impl {
         impl From<$name> for U256 {
             #[inline]
             fn from(mut a: $name) -> Self {
-                // TODO: Note: Can skip mul b/c raw form is simpler in zkvm
+                // Note: no conversion here b/c the zkvm raw data isn't Montgomery
                 a.0
             }
         }
 
         impl $name {
             pub fn from_str(s: &str) -> Option<Self> {
-                // TODO: Same as base. Could make a little more efficient in the zkVM, but ... why bother?
+                // TODO: We could make this a little more efficient for the zkVM, but it seems unnecessary
                 let ints: Vec<_> = {
                     let mut acc = Self::zero();
                     (0..11).map(|_| {let tmp = acc; acc = acc + Self::one(); tmp}).collect()
