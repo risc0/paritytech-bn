@@ -287,7 +287,6 @@ macro_rules! field_impl {
             #[inline]
             #[allow(dead_code)]
             pub fn modulus() -> U256 {
-                // TODO: Note: Same as base case
                 U256::from($modulus)
             }
 
@@ -309,12 +308,11 @@ macro_rules! field_impl {
                 modulus_bytes
             }
 
-            #[inline]
-            #[allow(dead_code)]
-            pub fn inv(&self) -> u128 {
-                // TODO: Pretty pointless in the zkVM but I guess why not. Note: same as base case
-                $inv
-            }
+            // This is specific to Montgomery operations that don't work well w/ the zkvm
+            // These fields also aren't directly public; hence this is dropped.
+            // pub fn inv(&self) -> u128 {
+            //     $inv
+            // }
 
             pub fn raw(&self) -> &U256 {
                 unimplemented!("There is no `raw` Montgomery representation; consider `raw_nonmont`");
