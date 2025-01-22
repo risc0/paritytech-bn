@@ -247,7 +247,6 @@ macro_rules! field_impl {
             }
 
             pub fn new(mut a: U256) -> Option<Self> {
-                // TODO: Note: This is the simpler zkVM case
                 if a < U256::from($modulus) {
                     Some($name(a))
                 } else {
@@ -256,26 +255,18 @@ macro_rules! field_impl {
             }
 
             pub fn new_mul_factor(mut a: U256) -> Self {
-                // TODO: Note this is the simpler zkVM case
                 // Note: This adds zero to force a reduce
-                // TODO: Maybe make a reduce op?
+                // TODO: Maybe make a reduce op to bigint?
                 $name(a) + $name(U256::from([0, 0, 0, 0]))
             }
 
-            // TODO: Do we actually even need these?
             const fn r() -> Self {
                 Self(U256::from_le_bytes($r))
             }
-            // fn r() -> Self {
-            //     Self(U256::from($r))
-            // }
 
             const fn r_inv() -> Self {
                 Self(U256::from_le_bytes($rinv))
             }
-            // fn r_inv() -> Self {
-            //     Self(U256::from($rinv))
-            // }
 
             pub fn to_montgomery(mut self) -> Self {
                 self.mul(Self::r())
