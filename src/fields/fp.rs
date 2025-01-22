@@ -678,6 +678,7 @@ fn tnz_one() {
     assert_eq!(Fq::one(), Fq::from_str("1").unwrap());
 }
 
+// TODO: Merge the r tests, use one
 // TODO: I don't think I plan on supporting this for non-zkvm, right?
 #[test]
 #[cfg(all(target_os = "zkvm", target_arch = "riscv32"))]
