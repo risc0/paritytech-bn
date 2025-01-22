@@ -360,13 +360,11 @@ macro_rules! field_impl {
         impl FieldElement for $name {
             #[inline]
             fn zero() -> Self {
-                // TODO: Note: Same as base case
                 $name(U256::from([0, 0, 0, 0]))
             }
 
             #[inline]
             fn one() -> Self {
-                // TODO: Note: Simpler than base case
                 $name(U256::from([1, 0, 0, 0]))
             }
 
@@ -377,12 +375,10 @@ macro_rules! field_impl {
 
             #[inline]
             fn is_zero(&self) -> bool {
-                // TODO: Note: Same as base case
                 self.0.is_zero()
             }
 
             fn inverse(mut self) -> Option<Self> {
-                // TODO: Note: Simpler than base case
                 if self.is_zero() {
                     None
                 } else {
@@ -397,7 +393,6 @@ macro_rules! field_impl {
 
             #[inline]
             fn add(mut self, other: $name) -> $name {
-                // TODO: Note: Same as base case
                 self.0.add(&other.0, &U256::from($modulus));
 
                 self
@@ -409,7 +404,6 @@ macro_rules! field_impl {
 
             #[inline]
             fn sub(mut self, other: $name) -> $name {
-                // TODO: Note: Simpler than base case
                 self.0.sub(&other.0, &U256::from($modulus));
 
                 self
@@ -421,7 +415,6 @@ macro_rules! field_impl {
 
             #[inline]
             fn mul(mut self, other: $name) -> $name {
-                // TODO: Note: Simpler than base case
                 self.0.modmul(&other.0, &U256::from($modulus));
 
                 self
@@ -433,7 +426,6 @@ macro_rules! field_impl {
 
             #[inline]
             fn neg(mut self) -> $name {
-                // TODO: Note: Same as base case
                 self.0.neg(&U256::from($modulus));
 
                 self
