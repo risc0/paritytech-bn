@@ -323,8 +323,7 @@ macro_rules! field_impl {
             }
 
             pub fn set_bit(&mut self, bit: usize, to: bool) {
-                // TODO: Maintaining set_bit semantics is annoying
-                unimplemented!("TODO: Maitaining `set_bit` semantics is annoying");
+                unimplemented!("`set_bit` Montgomery form semantics are awkward, and there is almost always a better approach than this function. That said, let the RISC Zero team know if you need this.");
             }
 
             pub const fn from_le_slice(bytes: &[u8]) -> Self {
