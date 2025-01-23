@@ -256,7 +256,7 @@ macro_rules! field_impl {
 
             pub fn new_mul_factor(mut a: U256) -> Self {
                 // Note: This adds zero to force a reduce
-                // TODO: Maybe make a reduce op to bigint?
+                // TODO: Maybe make a reduce op in bigint?
                 $name(a) + $name(U256::from([0, 0, 0, 0]))
             }
 
@@ -654,7 +654,7 @@ fn test_rsquared() {
 
 #[test]
 fn tnz_simple_square() {
-    // TODO: Based on sqrt_fq
+    // Uses the constant values from the sqrt test
     let fq1 = Fq::from_str("5204065062716160319596273903996315000119019512886596366359652578430118331601").unwrap();
     let fq2 = Fq::from_str("348579348568").unwrap();
 
