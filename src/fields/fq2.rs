@@ -266,7 +266,6 @@ impl Fq2 {
         Fq2::new(Fq::zero(), Fq::one())
     }
 
-    // TODO: What's going on here...?
     pub fn sqrt(&self) -> Option<Self> {
         let a1 = self.pow::<U256>((*FQ_MINUS3_DIV4).into());
         let a1a = a1 * *self;
@@ -342,8 +341,7 @@ fn sqrt_fq2() {
 
 #[test]
 fn tnz_from_mont_le_slice() {
-    // Test reading in the known Montgomery form of 1 in Fq and Fr
-    // TODO: Might be a nicer test?
+    // Test reading in the known Montgomery form of 1 + i in Fq2
     let montgomery_one_fq = U256::from([
         0xd35d438dc58f0d9d,
         0xa78eb28f5c70b3d,
