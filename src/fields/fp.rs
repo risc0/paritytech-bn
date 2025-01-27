@@ -632,9 +632,10 @@ pub fn const_fq(i: [u64; 4]) -> Fq {
 #[inline]
 pub fn const_fq(i: [u64; 4]) -> Fq {
     // The semantics assume the input is in Montgomery form, but we don't use Montgomery form internally
-    // Consider using `Fq::from_le_slice` instead if your data is not in Montgomery form already
-    let as_u8s: [u8; 32] = bytemuck::cast(i);
-    Fq::from_mont_le_slice(&as_u8s)
+    Fq(U256::from(i)).from_montgomery()
+    // // Consider using `Fq::from_le_slice` instead if your data is not in Montgomery form already
+    // let as_u8s: [u8; 32] = bytemuck::cast(i);
+    // Fq::from_mont_le_slice(&as_u8s)
 }
 
 #[test]
