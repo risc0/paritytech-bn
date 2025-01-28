@@ -262,11 +262,11 @@ macro_rules! field_impl {
             }
 
             const fn r() -> Self {
-                Self(U256::from_le_bytes($r))
+                Self(U256::from_le_slice(&$r))
             }
 
             const fn r_inv() -> Self {
-                Self(U256::from_le_bytes($rinv))
+                Self(U256::from_le_slice(&$rinv))
             }
 
             pub fn to_montgomery(mut self) -> Self {
@@ -767,8 +767,8 @@ fn tnz_r() {
 
 #[test]
 fn modulus_bytes() {
-    assert_eq!(Fq::modulus(), U256::from_le_bytes(Fq::modulus_bytes()));
-    assert_eq!(Fr::modulus(), U256::from_le_bytes(Fr::modulus_bytes()));
+    assert_eq!(Fq::modulus(), U256::from_le_slice(&Fq::modulus_bytes()));
+    assert_eq!(Fr::modulus(), U256::from_le_slice(&Fr::modulus_bytes()));
 }
 
 #[test]

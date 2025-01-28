@@ -499,16 +499,16 @@ impl U256 {
         BitIterator { int: &self, n: 256 }
     }
 
-    // TODO: Only retain one of this & from_le_slice
-    pub const fn from_le_bytes(bytes: [u8; 32]) -> Self {
-        // TODO: Or maybe just copy in like crypto-bigint does
-        // Safe to transmute due to the array layout rules:
-        // https://doc.rust-lang.org/reference/type-layout.html#array-layout
-        unsafe {
-            let bytes = mem::transmute::<[u8; 32], [[u8; 16]; 2]>(bytes);
-            U256([u128::from_le_bytes(bytes[0]), u128::from_le_bytes(bytes[1])])
-        }
-    }
+    // // TODO: Only retain one of this & from_le_slice
+    // pub const fn from_le_bytes(bytes: [u8; 32]) -> Self {
+    //     // TODO: Or maybe just copy in like crypto-bigint does
+    //     // Safe to transmute due to the array layout rules:
+    //     // https://doc.rust-lang.org/reference/type-layout.html#array-layout
+    //     unsafe {
+    //         let bytes = mem::transmute::<[u8; 32], [[u8; 16]; 2]>(bytes);
+    //         U256([u128::from_le_bytes(bytes[0]), u128::from_le_bytes(bytes[1])])
+    //     }
+    // }
 
     pub const fn from_le_slice(bytes: &[u8]) -> Self {
         assert!(bytes.len() == 32);
@@ -976,34 +976,35 @@ fn tnz_test_mul() {
 // U512: new, from_slice, random, get_bit, interpret
 // TODO: Rename, sort, etc the `tnz` tests
 
-fn tnz_from_le_bytes() {
-    let one_bytes: [u8; 32] = [
-        1, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0,
-    ];
-    assert_eq!(U256::from_le_bytes(one_bytes), U256::one());
+// TODO: But need to test from_le_slice
+// fn tnz_from_le_bytes() {
+//     let one_bytes: [u8; 32] = [
+//         1, 0, 0, 0, 0, 0, 0, 0,
+//         0, 0, 0, 0, 0, 0, 0, 0,
+//         0, 0, 0, 0, 0, 0, 0, 0,
+//         0, 0, 0, 0, 0, 0, 0, 0,
+//     ];
+//     assert_eq!(U256::from_le_bytes(one_bytes), U256::one());
 
-    const le_bytes: [u8; 32] = [
-        47, 24, 11, 13, 33, 22, 10, 20,
-        0, 40, 0, 0, 0, 0, 0, 0,
-        0, 0, 50, 0, 0, 0, 0, 0,
-        0, 0, 0, 60, 0, 0, 0, 34,
-    ];
-    const val_from_le: U256 = U256::from_le_bytes(le_bytes);
-    let be_bytes: [u8; 32] = [
-        34, 0, 0, 0, 60, 0, 0, 0,
-        0, 0, 0, 0, 0, 50, 0, 0,
-        0, 0, 0, 0, 0, 0, 40, 0,
-        20, 10, 22, 33, 13, 11, 24, 47,
-    ];
-    assert_eq!(val_from_le, U256::from_slice(&be_bytes).unwrap());
-    assert_eq!(val_from_le, U256::from([
-        0x140A16210D0B182F,
-        0x0000000000002800,
-        0x0000000000320000,
-        0x220000003C000000,
-    ]));
-    assert_eq!(val_from_le, U256::from_le_slice(&le_bytes));
-}
+//     const le_bytes: [u8; 32] = [
+//         47, 24, 11, 13, 33, 22, 10, 20,
+//         0, 40, 0, 0, 0, 0, 0, 0,
+//         0, 0, 50, 0, 0, 0, 0, 0,
+//         0, 0, 0, 60, 0, 0, 0, 34,
+//     ];
+//     const val_from_le: U256 = U256::from_le_bytes(le_bytes);
+//     let be_bytes: [u8; 32] = [
+//         34, 0, 0, 0, 60, 0, 0, 0,
+//         0, 0, 0, 0, 0, 50, 0, 0,
+//         0, 0, 0, 0, 0, 0, 40, 0,
+//         20, 10, 22, 33, 13, 11, 24, 47,
+//     ];
+//     assert_eq!(val_from_le, U256::from_slice(&be_bytes).unwrap());
+//     assert_eq!(val_from_le, U256::from([
+//         0x140A16210D0B182F,
+//         0x0000000000002800,
+//         0x0000000000320000,
+//         0x220000003C000000,
+//     ]));
+//     assert_eq!(val_from_le, U256::from_le_slice(&le_bytes));
+// }
