@@ -8,9 +8,6 @@ use crate::arith::{U256, U512};
 #[cfg(all(target_os = "zkvm", target_arch = "riscv32"))]
 use crypto_bigint::Uint;
 
-#[cfg(all(target_os = "zkvm", target_arch = "riscv32"))]
-use risc0_bigint2::field;
-
 #[cfg(not(all(target_os = "zkvm", target_arch = "riscv32")))]
 macro_rules! field_impl {
     ($name:ident, $modulus:expr, $rsquared:expr, $rcubed:expr, $one:expr, $inv:expr) => {
@@ -84,24 +81,6 @@ macro_rules! field_impl {
             #[allow(dead_code)]
             pub fn modulus() -> U256 {
                 U256::from($modulus)
-            }
-
-            const fn modulus_bytes() -> [u8; 32] {
-                // Convert modulus from an array of u64 words to an array of u8 bytes
-                let mut modulus_bytes = [0u8; 32];
-                let mut word_idx = 0;
-                let mut byte_idx = 0;
-                while word_idx < 4 {
-                    let word: u64 = $modulus[word_idx];
-                    let word = word.to_le_bytes();
-                    while byte_idx < 8 {
-                        modulus_bytes[8 * word_idx + byte_idx] = word[byte_idx];
-                        byte_idx += 1;
-                    }
-                    byte_idx = 0;
-                    word_idx += 1;
-                }
-                modulus_bytes
             }
 
             #[inline]
@@ -217,7 +196,7 @@ macro_rules! field_impl {
 
         impl From<$name> for U256 {
             #[inline]
-            fn from(mut a: $name) -> Self {
+            fn from(a: $name) -> Self {
                 // Note: no conversion here b/c the zkvm raw data isn't Montgomery
                 a.0
             }
@@ -247,7 +226,7 @@ macro_rules! field_impl {
                 Some(res)
             }
 
-            pub fn new(mut a: U256) -> Option<Self> {
+            pub fn new(a: U256) -> Option<Self> {
                 if a < U256::from($modulus) {
                     Some($name(a))
                 } else {
@@ -255,7 +234,7 @@ macro_rules! field_impl {
                 }
             }
 
-            pub fn new_mul_factor(mut a: U256) -> Self {
+            pub fn new_mul_factor(a: U256) -> Self {
                 // Note: This adds zero to force a reduce
                 // TODO: Maybe make a reduce op in bigint?
                 $name(a) + $name(U256::from([0, 0, 0, 0]))
@@ -269,11 +248,11 @@ macro_rules! field_impl {
                 Self(U256::from_le_slice(&$rinv))
             }
 
-            pub fn to_montgomery(mut self) -> Self {
+            pub fn to_montgomery(self) -> Self {
                 self.mul(Self::r())
             }
 
-            pub fn from_montgomery(mut self) -> Self {
+            pub fn from_montgomery(self) -> Self {
                 self.mul(Self::r_inv())
             }
 
@@ -323,7 +302,7 @@ macro_rules! field_impl {
                 &self.0
             }
 
-            pub fn set_bit(&mut self, bit: usize, to: bool) {
+            pub fn set_bit(&mut self, _bit: usize, _to: bool) {
                 unimplemented!("`set_bit` Montgomery form semantics are awkward, and there is almost always a better approach than this function. That said, let the RISC Zero team know if you need this.");
             }
 

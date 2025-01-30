@@ -1,5 +1,4 @@
 use core::cmp::Ordering;
-use core::mem;
 use rand::Rng;
 use crunchy::unroll;
 
@@ -365,12 +364,11 @@ impl U256 {
         let mut neg_modulus_mod_2_218 = [0u32; 8];
         assert_ne!(prime[0], 0, "Modulus must be prime");
         for i in 0..4 {  // mod 2^128, so only need to do least significant half
-            let val = prime[i];
             neg_modulus_mod_2_218[i] = u32::MAX - prime[i];
         }
         neg_modulus_mod_2_218[0] += 1;  // Safe to add 1 since prime[0] != 0
         let mut m_prime = [0u32; 8];
-        let mut two_128 = [0u32, 0u32, 0u32, 0u32, 1u32, 0u32, 0u32, 0u32];
+        let two_128 = [0u32, 0u32, 0u32, 0u32, 1u32, 0u32, 0u32, 0u32];
         field::modinv_256(&neg_modulus_mod_2_218, &two_128, &mut m_prime);
         let m_prime: u128 = m_prime[0] as u128 + (1 << 32) * (m_prime[1] as u128) + (1 << 64) * (m_prime[2] as u128) + (1 << 96) * (m_prime[3] as u128);
         assert_eq!(inv, m_prime);  // Otherwise we have an inconsistency in b^n used in the algorithm
