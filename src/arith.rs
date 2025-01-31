@@ -499,7 +499,6 @@ impl U256 {
 
     pub const fn from_le_slice(bytes: &[u8]) -> Self {
         assert!(bytes.len() == 32);
-        // TODO: Use some `Uninit` something here? Really just in general clean up perf of this
         let mut lo = [0u8; 16];
         let mut hi = [0u8; 16];
         let mut idx = 0;
