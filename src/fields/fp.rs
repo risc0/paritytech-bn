@@ -342,7 +342,8 @@ macro_rules! field_impl {
                 $name(U256::from([1, 0, 0, 0]))
             }
 
-            // TODO: Does it matter that we get different random numbers (Montgomery vs. not)?
+            // Note: These random numbers will not match those generated without acceleration, even
+            // if using the same rng/seed, due to an absence of Montgomery form.
             fn random<R: Rng>(rng: &mut R) -> Self {
                 $name(U256::random(rng, &U256::from($modulus)))
             }
@@ -646,8 +647,6 @@ fn tnz_one() {
     assert_eq!(Fq::one(), Fq::from_str("1").unwrap());
 }
 
-// TODO: Merge the r tests, use one
-// TODO: I don't think I plan on supporting this for non-zkvm, right?
 #[test]
 #[cfg(all(target_os = "zkvm", target_arch = "riscv32"))]
 fn tnz_r_val() {
@@ -661,7 +660,6 @@ fn tnz_r_val() {
     assert_eq!(Fq::r(), val);
 }
 
-// TODO: I don't think I plan on supporting this for non-zkvm, right?
 #[test]
 #[cfg(all(target_os = "zkvm", target_arch = "riscv32"))]
 fn tnz_r_inv_val() {
@@ -674,7 +672,6 @@ fn tnz_r_inv_val() {
     assert_eq!(Fq::r_inv(), val);
 }
 
-// TODO: I don't think I plan on supporting this for non-zkvm, right?
 #[test]
 #[cfg(all(target_os = "zkvm", target_arch = "riscv32"))]
 fn tnz_from_le_slice() {
