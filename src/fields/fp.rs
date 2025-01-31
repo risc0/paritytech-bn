@@ -97,10 +97,6 @@ macro_rules! field_impl {
                 self.0.set_bit(bit, to);
             }
 
-            // TODO: We're not going to try to support this, right?
-            // pub const fn from_le_slice(bytes: &[u8]) -> Self {
-            // }
-
             pub const fn from_mont_le_slice(bytes: &[u8]) -> Self {
                 $name(U256::from_le_slice(&bytes))
             }
@@ -114,7 +110,6 @@ macro_rules! field_impl {
 
             #[inline]
             fn one() -> Self {
-                // assert!(false, "EXPLODE ON PURPOSE (NON-zkvm)!");
                 $name(U256::from($one))
             }
 
@@ -185,10 +180,9 @@ macro_rules! field_impl {
     }
 }
 
-// TODO: Remove r / one redundancy
 #[cfg(all(target_os = "zkvm", target_arch = "riscv32"))]
 macro_rules! field_impl {
-    ($name:ident, $modulus:expr, $rsquared:expr, $rcubed:expr, $one:expr, $inv:expr, $r:expr, $rinv:expr) => {
+    ($name:ident, $modulus:expr, $rsquared:expr, $rcubed:expr, $one:expr, $inv:expr, $rinv:expr) => {
         #[derive(Copy, Clone, PartialEq, Eq, Debug)]
         #[repr(C)]
         pub struct $name(U256);
@@ -241,7 +235,7 @@ macro_rules! field_impl {
             }
 
             const fn r() -> Self {
-                Self(U256::from_le_slice(&$r))
+                Self(U256::from_le_slice(&$one))
             }
 
             const fn r_inv() -> Self {
@@ -345,7 +339,6 @@ macro_rules! field_impl {
 
             #[inline]
             fn one() -> Self {
-                // assert!(false, "EXPLODE ON PURPOSE (ZKVM!)!");
                 $name(U256::from([1, 0, 0, 0]))
             }
 
@@ -500,18 +493,12 @@ field_impl!(
         0x0cf8594b7fcc657c
     ],
     [
-        0xac96341c4ffffffb,
-        0x36fc76959f60cd29,
-        0x666ea36f7879462e,
-        0xe0a77c19a07df2f
-    ],
-    0x6586864b4c6911b3c2e1f593efffffff,
-    [
         0xfb, 0xff, 0xff, 0x4f, 0x1c, 0x34, 0x96, 0xac,
         0x29, 0xcd, 0x60, 0x9f, 0x95, 0x76, 0xfc, 0x36,
         0x2e, 0x46, 0x79, 0x78, 0x6f, 0xa3, 0x6e, 0x66,
         0x2f, 0xdf, 0x07, 0x9a, 0xc1, 0x77, 0x0a, 0x0e,
     ],
+    0x6586864b4c6911b3c2e1f593efffffff,
     [
         0x4e, 0x19, 0xb1, 0x6d, 0x05, 0xa0, 0x5b, 0xdc,
         0x87, 0xec, 0x11, 0xe1, 0xa9, 0xf5, 0x0e, 0x09,
@@ -543,18 +530,12 @@ field_impl!(
         0x20fd6e902d592544
     ],
     [
-        0xd35d438dc58f0d9d,
-        0xa78eb28f5c70b3d,
-        0x666ea36f7879462c,
-        0xe0a77c19a07df2f
-    ],
-    0x9ede7d651eca6ac987d20782e4866389,
-    [
         0x9d, 0x0d, 0x8f, 0xc5, 0x8d, 0x43, 0x5d, 0xd3,
         0x3d, 0x0b, 0xc7, 0xf5, 0x28, 0xeb, 0x78, 0x0a,
         0x2c, 0x46, 0x79, 0x78, 0x6f, 0xa3, 0x6e, 0x66,
         0x2f, 0xdf, 0x07, 0x9a, 0xc1, 0x77, 0x0a, 0x0e,
     ],
+    0x9ede7d651eca6ac987d20782e4866389,
     [
         0x37, 0xfa, 0x4a, 0x01, 0x4a, 0x88, 0x84, 0xed,
         0xf8, 0xed, 0x78, 0x02, 0x85, 0x22, 0x20, 0xeb,
