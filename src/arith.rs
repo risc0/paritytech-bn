@@ -1,6 +1,6 @@
 use core::cmp::Ordering;
-use rand::Rng;
 use crunchy::unroll;
+use rand::Rng;
 
 use byteorder::{BigEndian, ByteOrder};
 
@@ -84,7 +84,7 @@ impl U512 {
         U512(res)
     }
 
-     pub fn from_slice(s: &[u8]) -> Result<U512, Error> {
+    pub fn from_slice(s: &[u8]) -> Result<U512, Error> {
         if s.len() != 64 {
             return Err(Error::InvalidLength {
                 expected: 32,
@@ -294,7 +294,6 @@ impl U256 {
         self.0 = result;
     }
 
-
     #[cfg(not(all(target_os = "zkvm", target_arch = "riscv32")))]
     /// Add `other` to `self` (mod `modulo`)
     pub fn add(&mut self, other: &U256, modulo: &U256) {
@@ -304,7 +303,6 @@ impl U256 {
             sub_noborrow(&mut self.0, &modulo.0);
         }
     }
-
 
     #[cfg(all(target_os = "zkvm", target_arch = "riscv32"))]
     /// Subtract `other` from `self` (mod `modulo`)
@@ -317,7 +315,6 @@ impl U256 {
         field::modsub_256(lhs, rhs, prime, result_mut);
         self.0 = result;
     }
-
 
     #[cfg(not(all(target_os = "zkvm", target_arch = "riscv32")))]
     /// Subtract `other` from `self` (mod `modulo`)
@@ -363,21 +360,25 @@ impl U256 {
         // To do so, we compute m_prime = -prime^(-1) mod 2^128 and confirm it is `inv`
         let mut neg_modulus_mod_2_218 = [0u32; 8];
         assert_ne!(prime[0], 0, "Modulus must be prime");
-        for i in 0..4 {  // mod 2^128, so only need to do least significant half
+        for i in 0..4 {
+            // mod 2^128, so only need to do least significant half
             neg_modulus_mod_2_218[i] = u32::MAX - prime[i];
         }
-        neg_modulus_mod_2_218[0] += 1;  // Safe to add 1 since prime[0] != 0
+        neg_modulus_mod_2_218[0] += 1; // Safe to add 1 since prime[0] != 0
         let mut m_prime = [0u32; 8];
         let two_128 = [0u32, 0u32, 0u32, 0u32, 1u32, 0u32, 0u32, 0u32];
         field::modinv_256(&neg_modulus_mod_2_218, &two_128, &mut m_prime);
-        let m_prime: u128 = m_prime[0] as u128 + (1 << 32) * (m_prime[1] as u128) + (1 << 64) * (m_prime[2] as u128) + (1 << 96) * (m_prime[3] as u128);
-        assert_eq!(inv, m_prime);  // Otherwise we have an inconsistency in b^n used in the algorithm
+        let m_prime: u128 = m_prime[0] as u128
+            + (1 << 32) * (m_prime[1] as u128)
+            + (1 << 64) * (m_prime[2] as u128)
+            + (1 << 96) * (m_prime[3] as u128);
+        assert_eq!(inv, m_prime); // Otherwise we have an inconsistency in b^n used in the algorithm
 
         // This computes R = 2^256 % P = 2^256 - P via digit-wise subtraction, using the trick
         // that 2^256 - P will be the bit inverse of P plus 1.
         // Note: If prime < 2^128 this isn't normalized (i.e. we'll have R > prime), but we are
         // only using it as an input to a field operation, so it doesn't need to be
-        let mut r = [0u32; 8];  // This gives a representation of 2^256 mod prime, which is R
+        let mut r = [0u32; 8]; // This gives a representation of 2^256 mod prime, which is R
         let mut carry_needed = true;
         for i in 0..8 {
             let val = prime[i];
@@ -1030,12 +1031,15 @@ fn r0_from_le_slice() {
         20, 10, 22, 33, 13, 11, 24, 47,
     ];
     assert_eq!(val_from_le, U256::from_slice(&be_bytes).unwrap());
-    assert_eq!(val_from_le, U256::from([
-        0x140A16210D0B182F,
-        0x0000000000002800,
-        0x0000000000320000,
-        0x220000003C000000,
-    ]));
+    assert_eq!(
+        val_from_le,
+        U256::from([
+            0x140A16210D0B182F,
+            0x0000000000002800,
+            0x0000000000320000,
+            0x220000003C000000,
+        ])
+    );
 
     assert_eq!(val_from_le.get_bit(0), Some(true));
     assert_eq!(val_from_le.get_bit(1), Some(true));

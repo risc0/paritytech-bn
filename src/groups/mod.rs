@@ -411,7 +411,7 @@ impl AffineG1 {
         let (lo, hi) = bytes.split_at(32);
         AffineG1 {
             x: Fq::from_mont_le_slice(lo),
-            y: Fq::from_mont_le_slice(hi)
+            y: Fq::from_mont_le_slice(hi),
         }
     }
 }
@@ -492,7 +492,7 @@ impl AffineG2 {
         let (lo, hi) = bytes.split_at(64);
         AffineG2 {
             x: Fq2::from_mont_le_slice(lo),
-            y: Fq2::from_mont_le_slice(hi)
+            y: Fq2::from_mont_le_slice(hi),
         }
     }
 }

@@ -1,7 +1,7 @@
+use crate::arith::{U256, U512};
+use crate::fields::{const_fq, FieldElement, Fq};
 use core::ops::{Add, Mul, Neg, Sub};
 use rand::Rng;
-use crate::fields::{const_fq, FieldElement, Fq};
-use crate::arith::{U256, U512};
 
 #[cfg(all(target_os = "zkvm", target_arch = "riscv32"))]
 use bytemuck;
@@ -139,7 +139,8 @@ impl FieldElement for Fq2 {
         let ab = self.c0 * self.c1;
 
         Fq2 {
-            c0: (self.c1 * fq_non_residue() + self.c0) * (self.c0 + self.c1) - ab
+            c0: (self.c1 * fq_non_residue() + self.c0) * (self.c0 + self.c1)
+                - ab
                 - ab * fq_non_residue(),
             c1: ab + ab,
         }
@@ -291,26 +292,37 @@ impl Fq2 {
 fn sqrt_fq2() {
     // from zcash test_proof.cpp
     let x1 = Fq2::new(
-        Fq::from_str("12844195307879678418043983815760255909500142247603239203345049921980497041944").unwrap(),
-        Fq::from_str("7476417578426924565731404322659619974551724117137577781074613937423560117731").unwrap(),
+        Fq::from_str(
+            "12844195307879678418043983815760255909500142247603239203345049921980497041944",
+        )
+        .unwrap(),
+        Fq::from_str(
+            "7476417578426924565731404322659619974551724117137577781074613937423560117731",
+        )
+        .unwrap(),
     );
 
     let x2 = Fq2::new(
-        Fq::from_str("3345897230485723946872934576923485762803457692345760237495682347502347589474").unwrap(),
-        Fq::from_str("1234912378405347958234756902345768290345762348957605678245967234857634857676").unwrap(),
+        Fq::from_str(
+            "3345897230485723946872934576923485762803457692345760237495682347502347589474",
+        )
+        .unwrap(),
+        Fq::from_str(
+            "1234912378405347958234756902345768290345762348957605678245967234857634857676",
+        )
+        .unwrap(),
     );
 
     assert_eq!(x2.sqrt().unwrap(), x1);
 
     // i is sqrt(-1)
-    assert_eq!(
-        Fq2::one().neg().sqrt().unwrap(),
-        Fq2::i(),
-    );
+    assert_eq!(Fq2::one().neg().sqrt().unwrap(), Fq2::i(),);
 
     // no sqrt for (1 + 2i)
     assert!(
-        Fq2::new(Fq::from_str("1").unwrap(), Fq::from_str("2").unwrap()).sqrt().is_none()
+        Fq2::new(Fq::from_str("1").unwrap(), Fq::from_str("2").unwrap())
+            .sqrt()
+            .is_none()
     );
 }
 
@@ -318,12 +330,24 @@ fn sqrt_fq2() {
 fn r0_simple_square() {
     // based on sqrt_fq2
     let x1 = Fq2::new(
-        Fq::from_str("12844195307879678418043983815760255909500142247603239203345049921980497041944").unwrap(),
-        Fq::from_str("7476417578426924565731404322659619974551724117137577781074613937423560117731").unwrap(),
+        Fq::from_str(
+            "12844195307879678418043983815760255909500142247603239203345049921980497041944",
+        )
+        .unwrap(),
+        Fq::from_str(
+            "7476417578426924565731404322659619974551724117137577781074613937423560117731",
+        )
+        .unwrap(),
     );
     let x2 = Fq2::new(
-        Fq::from_str("3345897230485723946872934576923485762803457692345760237495682347502347589474").unwrap(),
-        Fq::from_str("1234912378405347958234756902345768290345762348957605678245967234857634857676").unwrap(),
+        Fq::from_str(
+            "3345897230485723946872934576923485762803457692345760237495682347502347589474",
+        )
+        .unwrap(),
+        Fq::from_str(
+            "1234912378405347958234756902345768290345762348957605678245967234857634857676",
+        )
+        .unwrap(),
     );
 
     assert_eq!(x1 * x1, x2);
@@ -344,7 +368,9 @@ fn r0_from_mont_le_slice() {
         0xe0a77c19a07df2f,
     ]);
     let mut mont_one_fq_bytes = [0u8; 32];
-    montgomery_one_fq.to_big_endian(&mut mont_one_fq_bytes).unwrap();
+    montgomery_one_fq
+        .to_big_endian(&mut mont_one_fq_bytes)
+        .unwrap();
     mont_one_fq_bytes.reverse();
     let mut mont_one_fq2_bytes = [0u8; 64];
     let mut mont_i_fq2_bytes = [0u8; 64];

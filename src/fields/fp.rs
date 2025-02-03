@@ -1,8 +1,8 @@
+use crate::arith::{U256, U512};
+use crate::fields::FieldElement;
 use alloc::vec::Vec;
 use core::ops::{Add, Mul, Neg, Sub};
 use rand::Rng;
-use crate::fields::FieldElement;
-use crate::arith::{U256, U512};
 
 // Used for doing `const` Montgomery form conversions
 #[cfg(all(target_os = "zkvm", target_arch = "riscv32"))]
@@ -14,7 +14,6 @@ macro_rules! field_impl {
         #[derive(Copy, Clone, PartialEq, Eq, Debug)]
         #[repr(C)]
         pub struct $name(U256);
-
 
         impl From<$name> for U256 {
             #[cfg(not(all(target_os = "zkvm", target_arch = "riscv32")))]
@@ -36,7 +35,13 @@ macro_rules! field_impl {
             pub fn from_str(s: &str) -> Option<Self> {
                 let ints: Vec<_> = {
                     let mut acc = Self::zero();
-                    (0..11).map(|_| {let tmp = acc; acc = acc + Self::one(); tmp}).collect()
+                    (0..11)
+                        .map(|_| {
+                            let tmp = acc;
+                            acc = acc + Self::one();
+                            tmp
+                        })
+                        .collect()
                 };
 
                 let mut res = Self::zero();
@@ -45,7 +50,7 @@ macro_rules! field_impl {
                         Some(d) => {
                             res = res * ints[10];
                             res = res + ints[d as usize];
-                        },
+                        }
                         None => {
                             return None;
                         }
@@ -127,7 +132,8 @@ macro_rules! field_impl {
                     None
                 } else {
                     self.0.invert(&U256::from($modulus));
-                    self.0.mul(&U256::from($rcubed), &U256::from($modulus), $inv);
+                    self.0
+                        .mul(&U256::from($rcubed), &U256::from($modulus), $inv);
 
                     Some(self)
                 }
@@ -177,7 +183,7 @@ macro_rules! field_impl {
                 self
             }
         }
-    }
+    };
 }
 
 #[cfg(all(target_os = "zkvm", target_arch = "riscv32"))]
@@ -577,15 +583,15 @@ lazy_static::lazy_static! {
         0x30644e72e131a029
     ]);
 
-	pub static ref FQ_MINUS3_DIV4: Fq =
-		Fq::new(3.into()).expect("3 is a valid field element and static; qed").neg() *
-		Fq::new(4.into()).expect("4 is a valid field element and static; qed").inverse()
-			.expect("4 has inverse in Fq and is static; qed");
+    pub static ref FQ_MINUS3_DIV4: Fq =
+        Fq::new(3.into()).expect("3 is a valid field element and static; qed").neg() *
+        Fq::new(4.into()).expect("4 is a valid field element and static; qed").inverse()
+            .expect("4 has inverse in Fq and is static; qed");
 
-	static ref FQ_MINUS1_DIV2: Fq =
-		Fq::new(1.into()).expect("1 is a valid field element and static; qed").neg() *
-		Fq::new(2.into()).expect("2 is a valid field element and static; qed").inverse()
-			.expect("2 has inverse in Fq and is static; qed");
+    static ref FQ_MINUS1_DIV2: Fq =
+        Fq::new(1.into()).expect("1 is a valid field element and static; qed").neg() *
+        Fq::new(2.into()).expect("2 is a valid field element and static; qed").inverse()
+            .expect("2 has inverse in Fq and is static; qed");
 
 }
 
@@ -646,7 +652,10 @@ fn test_rsquared() {
 #[test]
 fn sqrt_fq() {
     // from zcash test_proof.cpp
-    let fq1 = Fq::from_str("5204065062716160319596273903996315000119019512886596366359652578430118331601").unwrap();
+    let fq1 = Fq::from_str(
+        "5204065062716160319596273903996315000119019512886596366359652578430118331601",
+    )
+    .unwrap();
     let fq2 = Fq::from_str("348579348568").unwrap();
 
     assert_eq!(fq1, fq2.sqrt().expect("348579348568 is quadratic residue"));
@@ -660,12 +669,15 @@ fn r0_one() {
 #[test]
 #[cfg(all(target_os = "zkvm", target_arch = "riscv32"))]
 fn r0_from_le_slice() {
-    assert_eq!(Fq::one(), Fq::from_le_slice(&[
-        1, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0,
-    ]));
+    assert_eq!(
+        Fq::one(),
+        Fq::from_le_slice(&[
+            1, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0,
+        ])
+    );
 }
 
 #[test]
@@ -678,7 +690,9 @@ fn r0_from_mont_le_slice() {
         0xe0a77c19a07df2f,
     ]);
     let mut mont_one_bytes = [0u8; 32];
-    montgomery_one_fq.to_big_endian(&mut mont_one_bytes).unwrap();
+    montgomery_one_fq
+        .to_big_endian(&mut mont_one_bytes)
+        .unwrap();
     mont_one_bytes.reverse();
     assert_eq!(Fq::one(), Fq::from_mont_le_slice(&mont_one_bytes));
 
@@ -689,7 +703,9 @@ fn r0_from_mont_le_slice() {
         0xe0a77c19a07df2f,
     ]);
     let mut mont_one_bytes = [0u8; 32];
-    montgomery_one_fr.to_big_endian(&mut mont_one_bytes).unwrap();
+    montgomery_one_fr
+        .to_big_endian(&mut mont_one_bytes)
+        .unwrap();
     mont_one_bytes.reverse();
     assert_eq!(Fr::one(), Fr::from_mont_le_slice(&mont_one_bytes));
 }
@@ -747,13 +763,22 @@ fn r0_basic_mul() {
     assert_eq!(U256::from(two * three), U256::from(6u64));
     assert_eq!(Fq::one() * two, two);
     assert_eq!(Fq::one() * three, three);
-    assert_eq!(Fq::one(), two * Fq::from_str("10944121435919637611123202872628637544348155578648911831344518947322613104292").unwrap());
+    assert_eq!(
+        Fq::one(),
+        two * Fq::from_str(
+            "10944121435919637611123202872628637544348155578648911831344518947322613104292"
+        )
+        .unwrap()
+    );
 }
 
 #[test]
 fn r0_simple_square() {
     // Uses the constant values from the sqrt test
-    let fq1 = Fq::from_str("5204065062716160319596273903996315000119019512886596366359652578430118331601").unwrap();
+    let fq1 = Fq::from_str(
+        "5204065062716160319596273903996315000119019512886596366359652578430118331601",
+    )
+    .unwrap();
     let fq2 = Fq::from_str("348579348568").unwrap();
 
     assert_eq!(fq1 * fq1, fq2);
