@@ -8,7 +8,6 @@ use bytemuck;
 #[cfg(all(target_os = "zkvm", target_arch = "riscv32"))]
 use risc0_bigint2::field;
 
-// #[cfg(not(all(target_os = "zkvm", target_arch = "riscv32")))]
 #[inline]
 fn fq_non_residue() -> Fq {
     // (q - 1) is a quadratic nonresidue in Fq
@@ -20,19 +19,6 @@ fn fq_non_residue() -> Fq {
         0x2259d6b14729c0fa,
     ])
 }
-
-// #[cfg(all(target_os = "zkvm", target_arch = "riscv32"))]
-// #[inline]
-// fn fq_non_residue() -> Fq {
-//     // (q - 1) is a quadratic nonresidue in Fq
-//     // 21888242871839275222246405745257275088696311157297823662689037894645226208582
-//     const_fq([
-//         0x3C208C16D87CFD46,
-//         0x97816A916871CA8D,
-//         0xB85045B68181585D,
-//         0x30644E72E131A029,
-//     ])
-// }
 
 #[inline]
 pub fn fq2_nonresidue() -> Fq2 {
