@@ -180,7 +180,7 @@ impl Mul for Fq2 {
         let mut result_mut = [[0u32; 8]; 2];
         // TODO: Use specialized x^2 + 1 mul
         field::extfield_deg2_mul_256(&lhs, &rhs, &irred_poly, &prime, &mut result_mut);
-        let result: [[u128; 2]; 2] = bytemuck::cast(result_mut);
+        let result: &[[u128; 2]; 2] = bytemuck::cast_ref(&result_mut);
         Fq2 {
             c0: Fq::new(U256(result[0])).unwrap(),
             c1: Fq::new(U256(result[1])).unwrap(),
