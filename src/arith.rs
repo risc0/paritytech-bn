@@ -924,8 +924,8 @@ fn testing_divrem() {
     }
 }
 
-// TODO: Determine how much testing is needed. Places to look:
-// U512: new, from_slice, random, get_bit, interpret
+// TODO: Do we want to extend tests of U512?
+// i.e. new, from_slice, random, get_bit, interpret
 
 #[test]
 fn r0_basic_arith() {
