@@ -316,7 +316,6 @@ macro_rules! field_impl {
             pub const fn from_mont_le_slice(bytes: &[u8]) -> Self {
                 assert!(bytes.len() == 32);
                 let mont_val = crypto_bigint::U256::from_le_slice(&bytes);
-                // let mont_val = Uint::from_le_slice(&bytes);
                 let r_inv_val = Uint::from_le_slice(&$rinv);
                 let prod = mont_val.mul_wide(&r_inv_val);
 
@@ -622,10 +621,8 @@ pub fn const_fq(i: [u64; 4]) -> Fq {
 #[inline]
 pub fn const_fq(i: [u64; 4]) -> Fq {
     // The semantics assume the input is in Montgomery form, but we don't use Montgomery form internally
+    // Consider using `Fq::from_le_slice` instead if your data is not in Montgomery form already
     Fq(U256::from(i)).from_montgomery()
-    // // Consider using `Fq::from_le_slice` instead if your data is not in Montgomery form already
-    // let as_u8s: [u8; 32] = bytemuck::cast(i);
-    // Fq::from_mont_le_slice(&as_u8s)
 }
 
 #[test]
@@ -755,8 +752,6 @@ fn r0_modulus_bytes() {
 
 #[test]
 fn r0_basic_mul() {
-    // let two = Fq::from(U256::from(2u64));
-    // let three = Fq::from(U256::from(3u64));
     let two = Fq::from_str("2").unwrap();
     let three = Fq::from_str("3").unwrap();
 
