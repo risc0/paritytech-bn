@@ -780,31 +780,28 @@ mod tests {
     }
 
     #[test]
-    fn tnz_random() {
-        let rng = &mut rand::thread_rng();
-        let random_q = Fq::random(rng);
-        let random_r = Fr::random(rng);
-
-        assert!((random_q - random_q).is_zero());
-        assert!((random_r - random_r).is_zero());
+    fn r0_new() {
+        assert!(Fr::new(crate::fields::Fr::modulus()).is_none());
+        let mut modulus_plus_one = crate::fields::Fr::modulus();
+        modulus_plus_one.0[0] += 1;
+        assert!(Fr::new(modulus_plus_one).is_none());
+        assert_eq!(Fr::new(0.into()).unwrap(), Fr::zero());
+        assert_eq!(Fr::new(1.into()).unwrap(), Fr::one());
     }
 
     #[test]
-    fn tnz_pow() {
-        let rng = &mut rand::thread_rng();
-        let random_q = Fq::random(rng);
-        let random_r = Fr::random(rng);
+    fn r0_new_mul_factor() {
+        assert_eq!(Fr::new_mul_factor(crate::fields::Fr::modulus()), Fr::zero());
+        let mut modulus_plus_one = crate::fields::Fr::modulus();
+        modulus_plus_one.0[0] += 1;
+        assert_eq!(Fr::new_mul_factor(modulus_plus_one), Fr::one());
 
-        assert_eq!(random_q.pow(Fq::one()), random_q);
-        assert_eq!(random_r.pow(Fr::one()), random_r);
-        assert_eq!(Fq::one().pow(random_q), Fq::one());
-        assert_eq!(Fr::one().pow(random_r), Fr::one());
-        assert_eq!(random_q.pow(Fq::zero()), Fq::one());
-        assert_eq!(random_r.pow(Fr::zero()), Fr::one());
+        assert_eq!(Fr::new_mul_factor(0.into()), Fr::zero());
+        assert_eq!(Fr::new_mul_factor(1.into()), Fr::one());
     }
 
     #[test]
-    fn tnz_from_str() {
+    fn r0_from_str() {
         let q4 = Fq::from_str("4").unwrap();
         let q9 = Fq::from_str("9").unwrap();
         let q36 = Fq::from_str("36").unwrap();
@@ -817,37 +814,23 @@ mod tests {
     }
 
     #[test]
-    fn tnz_inverse() {
-        assert!(Fq::zero().inverse().is_none());
-        assert!(Fr::zero().inverse().is_none());
-
-        let rng = &mut rand::thread_rng();
-        let random_q = Fq::random(rng);
-        let random_r = Fr::random(rng);
-
-        let inv_q = random_q.inverse();
-        let inv_r = random_r.inverse();
-
-        if random_q.is_zero() {
-            assert!(inv_q.is_none());
-        } else {
-            assert_eq!(inv_q.unwrap() * random_q, Fq::one());
-        }
-        if random_r.is_zero() {
-            assert!(inv_r.is_none());
-        } else {
-            assert_eq!(inv_r.unwrap() * random_r, Fr::one());
-        }
-    }
-
-    #[test]
-    fn tnz_zero() {
+    fn r0_zero() {
         assert!(Fq::zero().is_zero());
         assert!(Fr::zero().is_zero());
     }
 
     #[test]
-    fn tnz_interpret() {
+    fn r0_random() {
+        let rng = &mut rand::thread_rng();
+        let random_q = Fq::random(rng);
+        let random_r = Fr::random(rng);
+
+        assert!((random_q - random_q).is_zero());
+        assert!((random_r - random_r).is_zero());
+    }
+
+    #[test]
+    fn r0_interpret() {
         // Interpretting one should give one
         let one_bytes: [u8; 64] = [
             0, 0, 0, 0, 0, 0, 0, 0,
@@ -875,7 +858,7 @@ mod tests {
     }
 
     #[test]
-    fn tnz_from_slice() {
+    fn r0_from_slice() {
         let one_bytes: [u8; 32] = [
             0, 0, 0, 0, 0, 0, 0, 0,
             0, 0, 0, 0, 0, 0, 0, 0,
@@ -889,7 +872,51 @@ mod tests {
     }
 
     #[test]
-    fn tnz_big_endian() {
+    fn r0_from_mont_le_slice() {
+        // This tests that reading in the Montgomery forms of 1 gives 1
+        let montgomery_one_fq = crate::arith::U256::from([
+            0xd35d438dc58f0d9d,
+            0xa78eb28f5c70b3d,
+            0x666ea36f7879462c,
+            0xe0a77c19a07df2f,
+        ]);
+        let mut mont_one_bytes = [0u8; 32];
+        montgomery_one_fq.to_big_endian(&mut mont_one_bytes).unwrap();
+        mont_one_bytes.reverse();
+        assert_eq!(Fq::one(), Fq::from_mont_le_slice(&mont_one_bytes));
+
+        let montgomery_one_fr = crate::arith::U256::from([
+            0xac96341c4ffffffb,
+            0x36fc76959f60cd29,
+            0x666ea36f7879462e,
+            0xe0a77c19a07df2f,
+        ]);
+        let mut mont_one_bytes = [0u8; 32];
+        montgomery_one_fr.to_big_endian(&mut mont_one_bytes).unwrap();
+        mont_one_bytes.reverse();
+        assert_eq!(Fr::one(), Fr::from_mont_le_slice(&mont_one_bytes));
+    }
+
+    #[test]
+    fn r0_from_u256() {
+        assert!(Fq::from_u256(Fq::modulus()).is_err());
+        let mut modulus_plus_one = Fq::modulus();
+        modulus_plus_one.0[0] += 1;
+        assert!(Fq::from_u256(modulus_plus_one).is_err());
+        assert_eq!(Fq::from_u256(0.into()).unwrap(), Fq::zero());
+        assert_eq!(Fq::from_u256(1.into()).unwrap(), Fq::one());
+    }
+
+    #[test]
+    fn r0_into_u256() {
+        let q5 = Fq::from_str("5").unwrap();
+        let r5 = Fr::from_str("5").unwrap();
+        assert_eq!(q5.into_u256(), 5.into());
+        assert_eq!(r5.into_u256(), 5.into());
+    }
+
+    #[test]
+    fn r0_big_endian() {
         let mut computed_bytes = [0u8; 32];
         let one_bytes: [u8; 32] = [
             0, 0, 0, 0, 0, 0, 0, 0,
@@ -913,65 +940,14 @@ mod tests {
     }
 
     #[test]
-    fn tnz_new() {
-        assert!(Fr::new(crate::fields::Fr::modulus()).is_none());
-        let mut modulus_plus_one = crate::fields::Fr::modulus();
-        modulus_plus_one.0[0] += 1;
-        assert!(Fr::new(modulus_plus_one).is_none());
-        assert_eq!(Fr::new(0.into()).unwrap(), Fr::zero());
-        assert_eq!(Fr::new(1.into()).unwrap(), Fr::one());
-    }
-
-    #[test]
-    fn tnz_new_mul_factor() {
-        assert_eq!(Fr::new_mul_factor(crate::fields::Fr::modulus()), Fr::zero());
-        let mut modulus_plus_one = crate::fields::Fr::modulus();
-        modulus_plus_one.0[0] += 1;
-        assert_eq!(Fr::new_mul_factor(modulus_plus_one), Fr::one());
-
-        assert_eq!(Fr::new_mul_factor(0.into()), Fr::zero());
-        assert_eq!(Fr::new_mul_factor(1.into()), Fr::one());
-    }
-
-    #[test]
-    fn tnz_into_u256() {
-        let q5 = Fq::from_str("5").unwrap();
-        let r5 = Fr::from_str("5").unwrap();
-        assert_eq!(q5.into_u256(), 5.into());
-        assert_eq!(r5.into_u256(), 5.into());
-    }
-
-    // Note: Not testing set_bit because it's not implemented for RISC Zero
-
-    #[test]
-    fn tnz_from_u256() {
-        assert!(Fq::from_u256(Fq::modulus()).is_err());
-        let mut modulus_plus_one = Fq::modulus();
-        modulus_plus_one.0[0] += 1;
-        assert!(Fq::from_u256(modulus_plus_one).is_err());
-        assert_eq!(Fq::from_u256(0.into()).unwrap(), Fq::zero());
-        assert_eq!(Fq::from_u256(1.into()).unwrap(), Fq::one());
-    }
-
-    #[test]
-    fn tnz_modulus() {
+    fn r0_modulus() {
         let mut modulus_minus_one = Fq::modulus();
         modulus_minus_one.0[0] -= 1;
         assert_eq!(Fq::from_u256(modulus_minus_one).unwrap(), Fq::zero() - Fq::one());
     }
 
     #[test]
-    fn tnz_sqrt() {
-        assert_eq!(Fq::one(), Fq::sqrt(&Fq::one()).unwrap());
-        assert_eq!(Fq::zero(), Fq::sqrt(&Fq::zero()).unwrap());
-        assert_eq!(Fq::from_str("2").unwrap(), Fq::sqrt(&Fq::from_str("4").unwrap()).unwrap());
-        assert_eq!(Fq::from_str("17918450306617730576773466553562392805212959031101866706334976164702657599807").unwrap(),
-                Fq::sqrt(&Fq::from_str("2").unwrap()).unwrap());
-        assert!(Fq::sqrt(&(Fq::zero() - Fq::one())).is_none());
-    }
-
-    #[test]
-    fn tnz_arithmetic() {
+    fn r0_arithmetic() {
         assert_eq!(Fq::one() + Fq::one(), Fq::from_str("2").unwrap());
         assert_eq!(Fq::one() - Fq::one(), Fq::zero());
         assert_eq!(-Fq::zero(), Fq::zero());
@@ -990,7 +966,57 @@ mod tests {
     }
 
     #[test]
-    fn tnz_fq2_constants() {
+    fn r0_pow() {
+        let rng = &mut rand::thread_rng();
+        let random_q = Fq::random(rng);
+        let random_r = Fr::random(rng);
+
+        assert_eq!(random_q.pow(Fq::one()), random_q);
+        assert_eq!(random_r.pow(Fr::one()), random_r);
+        assert_eq!(Fq::one().pow(random_q), Fq::one());
+        assert_eq!(Fr::one().pow(random_r), Fr::one());
+        assert_eq!(random_q.pow(Fq::zero()), Fq::one());
+        assert_eq!(random_r.pow(Fr::zero()), Fr::one());
+    }
+
+    #[test]
+    fn r0_inverse() {
+        assert!(Fq::zero().inverse().is_none());
+        assert!(Fr::zero().inverse().is_none());
+
+        let rng = &mut rand::thread_rng();
+        let random_q = Fq::random(rng);
+        let random_r = Fr::random(rng);
+
+        let inv_q = random_q.inverse();
+        let inv_r = random_r.inverse();
+
+        if random_q.is_zero() {
+            assert!(inv_q.is_none());
+        } else {
+            assert_eq!(inv_q.unwrap() * random_q, Fq::one());
+        }
+        if random_r.is_zero() {
+            assert!(inv_r.is_none());
+        } else {
+            assert_eq!(inv_r.unwrap() * random_r, Fr::one());
+        }
+    }
+
+    // Note: Not testing set_bit because it's not implemented for RISC Zero
+
+    #[test]
+    fn r0_sqrt() {
+        assert_eq!(Fq::one(), Fq::sqrt(&Fq::one()).unwrap());
+        assert_eq!(Fq::zero(), Fq::sqrt(&Fq::zero()).unwrap());
+        assert_eq!(Fq::from_str("2").unwrap(), Fq::sqrt(&Fq::from_str("4").unwrap()).unwrap());
+        assert_eq!(Fq::from_str("17918450306617730576773466553562392805212959031101866706334976164702657599807").unwrap(),
+                Fq::sqrt(&Fq::from_str("2").unwrap()).unwrap());
+        assert!(Fq::sqrt(&(Fq::zero() - Fq::one())).is_none());
+    }
+
+    #[test]
+    fn r0_fq2_constants() {
         assert!(Fq2::zero().is_zero());
         assert_eq!(Fq2::one() + Fq2::i() * Fq2::i(), Fq2::zero());
         assert_eq!(Fq2::one() * Fq2::i(), Fq2::i());
@@ -1005,20 +1031,20 @@ mod tests {
     }
 
     #[test]
-    fn tnz_fq2_new_and_parts() {
+    fn r0_fq2_new_and_parts() {
         let ext_elem = Fq2::new(Fq::from_str("4").unwrap(), Fq::from_str("3").unwrap());
         assert_eq!(ext_elem.real(), Fq::from_str("4").unwrap());
         assert_eq!(ext_elem.imaginary(), Fq::from_str("3").unwrap());
     }
 
     #[test]
-    fn tnz_fq2_pow() {
+    fn r0_fq2_pow() {
         let ext_elem = Fq2::new(Fq::from_str("5").unwrap(), Fq::from_str("2").unwrap());
         assert_eq!(ext_elem.pow(3.into()), Fq2::new(Fq::from_str("65").unwrap(), Fq::from_str("142").unwrap()));
     }
 
     #[test]
-    fn tnz_fq2_sqrt() {
+    fn r0_fq2_sqrt() {
         assert_eq!(Fq2::sqrt(&Fq2::zero()).unwrap(), Fq2::zero());
         assert_eq!(Fq2::sqrt(&Fq2::one()).unwrap(), Fq2::one());
         assert_eq!(Fq2::sqrt(&-Fq2::one()).unwrap(), Fq2::i());
@@ -1027,7 +1053,7 @@ mod tests {
     }
 
     #[test]
-    fn tnz_fq2_from_slice() {
+    fn r0_fq2_from_slice() {
         // This is 1 << 256; it represents ((1 << 256) % q) + ((1 << 256) / q) * i
         let example: [u8; 64] = [
             0, 0, 0, 0, 0, 0, 0, 0,
@@ -1042,32 +1068,6 @@ mod tests {
         let val = Fq2::from_slice(&example).unwrap();
         assert_eq!(val.real(), Fq::from_str("6350874878119819312338956282401532409788428879151445726012394534686998597021").unwrap());
         assert_eq!(val.imaginary(), Fq::from_str("5").unwrap());
-    }
-
-    #[test]
-    fn tnz_from_mont_le_slice() {
-        // This tests that reading in the Montgomery forms of 1 gives 1
-        let montgomery_one_fq = crate::arith::U256::from([
-            0xd35d438dc58f0d9d,
-            0xa78eb28f5c70b3d,
-            0x666ea36f7879462c,
-            0xe0a77c19a07df2f,
-        ]);
-        let mut mont_one_bytes = [0u8; 32];
-        montgomery_one_fq.to_big_endian(&mut mont_one_bytes).unwrap();
-        mont_one_bytes.reverse();
-        assert_eq!(Fq::one(), Fq::from_mont_le_slice(&mont_one_bytes));
-
-        let montgomery_one_fr = crate::arith::U256::from([
-            0xac96341c4ffffffb,
-            0x36fc76959f60cd29,
-            0x666ea36f7879462e,
-            0xe0a77c19a07df2f,
-        ]);
-        let mut mont_one_bytes = [0u8; 32];
-        montgomery_one_fr.to_big_endian(&mut mont_one_bytes).unwrap();
-        mont_one_bytes.reverse();
-        assert_eq!(Fr::one(), Fr::from_mont_le_slice(&mont_one_bytes));
     }
 }
 

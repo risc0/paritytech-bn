@@ -288,26 +288,6 @@ impl Fq2 {
 }
 
 #[test]
-fn tnz_simple_square() {
-    // based on sqrt_fq2
-    let x1 = Fq2::new(
-        Fq::from_str("12844195307879678418043983815760255909500142247603239203345049921980497041944").unwrap(),
-        Fq::from_str("7476417578426924565731404322659619974551724117137577781074613937423560117731").unwrap(),
-    );
-    let x2 = Fq2::new(
-        Fq::from_str("3345897230485723946872934576923485762803457692345760237495682347502347589474").unwrap(),
-        Fq::from_str("1234912378405347958234756902345768290345762348957605678245967234857634857676").unwrap(),
-    );
-
-    assert_eq!(x1 * x1, x2);
-}
-
-#[test]
-fn tnz_simple_times() {
-    assert_eq!(Fq2::one() * Fq2::one(), Fq2::one());
-}
-
-#[test]
 fn sqrt_fq2() {
     // from zcash test_proof.cpp
     let x1 = Fq2::new(
@@ -335,7 +315,27 @@ fn sqrt_fq2() {
 }
 
 #[test]
-fn tnz_from_mont_le_slice() {
+fn r0_simple_square() {
+    // based on sqrt_fq2
+    let x1 = Fq2::new(
+        Fq::from_str("12844195307879678418043983815760255909500142247603239203345049921980497041944").unwrap(),
+        Fq::from_str("7476417578426924565731404322659619974551724117137577781074613937423560117731").unwrap(),
+    );
+    let x2 = Fq2::new(
+        Fq::from_str("3345897230485723946872934576923485762803457692345760237495682347502347589474").unwrap(),
+        Fq::from_str("1234912378405347958234756902345768290345762348957605678245967234857634857676").unwrap(),
+    );
+
+    assert_eq!(x1 * x1, x2);
+}
+
+#[test]
+fn r0_simple_times() {
+    assert_eq!(Fq2::one() * Fq2::one(), Fq2::one());
+}
+
+#[test]
+fn r0_from_mont_le_slice() {
     // Test reading in the known Montgomery form of 1 + i in Fq2
     let montgomery_one_fq = U256::from([
         0xd35d438dc58f0d9d,

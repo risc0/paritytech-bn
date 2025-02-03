@@ -924,47 +924,11 @@ fn testing_divrem() {
     }
 }
 
-#[test]
-fn tnz_test_mul() {
-    // Tests Montgomery multiplication with known values (5 * 10 = 50)
-    let mut lhs = U256::from([
-        0x5059E8694A6C0E5F,
-        0x3F69A66D0E742784,
-        0x625AF360AB101812,
-        0x2E12444C75E1B101,
-    ]);
-    let rhs = U256::from([
-        0x58E95CFC540200FD,
-        0xB0E12FC6F4485774,
-        0x338FF155E94B9396,
-        0x13B994C81C2F53A6,
-    ]);
-    let expected = U256::from([
-        0x3D084613B3A71993,
-        0xDE7F9C7C725C25C1,
-        0x69D81708926CB9CD,
-        0x17472F351E407698,
-    ]);
-    let prime = U256::from([
-        0x3C208C16D87CFD47,
-        0x97816A916871CA8D,
-        0xB85045B68181585D,
-        0x30644E72E131A029,
-    ]);
-    let inv = 0x9ede7d651eca6ac987d20782e4866389;
-
-    lhs.mul(&rhs, &prime, inv);
-
-    assert_eq!(lhs, expected);
-}
-
 // TODO: Determine how much testing is needed. Places to look:
-// U256: zero, one, get_bit, add, sub, neg, is_even, invert
 // U512: new, from_slice, random, get_bit, interpret
-// TODO: Rename, sort, etc the `tnz` tests
 
 #[test]
-fn tnz_basic_arith() {
+fn r0_basic_arith() {
     let prime = U256::from([
         0x3C208C16D87CFD47,
         0x97816A916871CA8D,
@@ -1009,7 +973,41 @@ fn tnz_basic_arith() {
 }
 
 #[test]
-fn tnz_from_le_slice() {
+fn r0_test_mul() {
+    // Tests Montgomery multiplication with known values (5 * 10 = 50)
+    let mut lhs = U256::from([
+        0x5059E8694A6C0E5F,
+        0x3F69A66D0E742784,
+        0x625AF360AB101812,
+        0x2E12444C75E1B101,
+    ]);
+    let rhs = U256::from([
+        0x58E95CFC540200FD,
+        0xB0E12FC6F4485774,
+        0x338FF155E94B9396,
+        0x13B994C81C2F53A6,
+    ]);
+    let expected = U256::from([
+        0x3D084613B3A71993,
+        0xDE7F9C7C725C25C1,
+        0x69D81708926CB9CD,
+        0x17472F351E407698,
+    ]);
+    let prime = U256::from([
+        0x3C208C16D87CFD47,
+        0x97816A916871CA8D,
+        0xB85045B68181585D,
+        0x30644E72E131A029,
+    ]);
+    let inv = 0x9ede7d651eca6ac987d20782e4866389;
+
+    lhs.mul(&rhs, &prime, inv);
+
+    assert_eq!(lhs, expected);
+}
+
+#[test]
+fn r0_from_le_slice() {
     let one_bytes: [u8; 32] = [
         1, 0, 0, 0, 0, 0, 0, 0,
         0, 0, 0, 0, 0, 0, 0, 0,

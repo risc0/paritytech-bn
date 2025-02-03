@@ -1185,7 +1185,7 @@ fn test_y_at_point_at_infinity() {
 }
 
 #[test]
-fn tnz_from_le_slice() {
+fn r0_from_le_slice() {
     // Test using the generators of G1 and G2
     let pt = AffineG1::from_mont_le_slice(&[
         0x9d, 0x0d, 0x8f, 0xc5, 0x8d, 0x43, 0x5d, 0xd3,

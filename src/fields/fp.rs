@@ -644,60 +644,22 @@ fn test_rsquared() {
 }
 
 #[test]
-fn tnz_simple_square() {
-    // Uses the constant values from the sqrt test
+fn sqrt_fq() {
+    // from zcash test_proof.cpp
     let fq1 = Fq::from_str("5204065062716160319596273903996315000119019512886596366359652578430118331601").unwrap();
     let fq2 = Fq::from_str("348579348568").unwrap();
 
-    assert_eq!(fq1 * fq1, fq2);
+    assert_eq!(fq1, fq2.sqrt().expect("348579348568 is quadratic residue"));
 }
 
 #[test]
-fn tnz_basic_mul() {
-    // let two = Fq::from(U256::from(2u64));
-    // let three = Fq::from(U256::from(3u64));
-    let two = Fq::from_str("2").unwrap();
-    let three = Fq::from_str("3").unwrap();
-
-    assert_eq!(U256::from(two * three), U256::from(6u64));
-    assert_eq!(Fq::one() * two, two);
-    assert_eq!(Fq::one() * three, three);
-    assert_eq!(Fq::one(), two * Fq::from_str("10944121435919637611123202872628637544348155578648911831344518947322613104292").unwrap());
-}
-
-#[test]
-fn tnz_one() {
+fn r0_one() {
     assert_eq!(Fq::one(), Fq::from_str("1").unwrap());
 }
 
 #[test]
 #[cfg(all(target_os = "zkvm", target_arch = "riscv32"))]
-fn tnz_r_val() {
-    let val = Fq(U256::from([
-        0xD35D438DC58F0D9D,
-        0x0A78EB28F5C70B3D,
-        0x666EA36F7879462C,
-        0x0E0A77C19A07DF2F,
-    ]));
-
-    assert_eq!(Fq::r(), val);
-}
-
-#[test]
-#[cfg(all(target_os = "zkvm", target_arch = "riscv32"))]
-fn tnz_r_inv_val() {
-    let val = Fq(U256::from([
-        0xED84884A014AFA37,
-        0xEB2022850278EDF8,
-        0xCF63E9CFB74492D9,
-        0x2E67157159E5C639,
-    ]));
-    assert_eq!(Fq::r_inv(), val);
-}
-
-#[test]
-#[cfg(all(target_os = "zkvm", target_arch = "riscv32"))]
-fn tnz_from_le_slice() {
+fn r0_from_le_slice() {
     assert_eq!(Fq::one(), Fq::from_le_slice(&[
         1, 0, 0, 0, 0, 0, 0, 0,
         0, 0, 0, 0, 0, 0, 0, 0,
@@ -707,7 +669,7 @@ fn tnz_from_le_slice() {
 }
 
 #[test]
-fn tnz_from_mont_le_slice() {
+fn r0_from_mont_le_slice() {
     // Test reading in the known Montgomery form of 1 in Fq and Fr
     let montgomery_one_fq = U256::from([
         0xd35d438dc58f0d9d,
@@ -734,29 +696,65 @@ fn tnz_from_mont_le_slice() {
 
 #[test]
 #[cfg(all(target_os = "zkvm", target_arch = "riscv32"))]
-fn tnz_r() {
-    assert_eq!(Fq::r() * Fq::r_inv(), Fq::one());
-    assert_eq!(Fr::r() * Fr::r_inv(), Fr::one());
-    assert_eq!(Fq::r(), Fq::one() * Fq::r());
-    assert_eq!(Fr::r(), Fr::one() * Fr::r());
-    assert_eq!(Fq::one().to_montgomery(), Fq::r());
-    assert_eq!(Fr::one().to_montgomery(), Fr::r());
-    assert_eq!(Fq::one().from_montgomery(), Fq::r_inv());
-    assert_eq!(Fr::one().from_montgomery(), Fr::r_inv());
+fn r0_r_val() {
+    let val = Fq(U256::from([
+        0xD35D438DC58F0D9D,
+        0x0A78EB28F5C70B3D,
+        0x666EA36F7879462C,
+        0x0E0A77C19A07DF2F,
+    ]));
+
+    assert_eq!(Fq::r(), val);
 }
 
 #[test]
 #[cfg(all(target_os = "zkvm", target_arch = "riscv32"))]
-fn modulus_bytes() {
+fn r0_r_inv_val() {
+    let val = Fq(U256::from([
+        0xED84884A014AFA37,
+        0xEB2022850278EDF8,
+        0xCF63E9CFB74492D9,
+        0x2E67157159E5C639,
+    ]));
+    assert_eq!(Fq::r_inv(), val);
+}
+
+#[test]
+#[cfg(all(target_os = "zkvm", target_arch = "riscv32"))]
+fn r0_r() {
+    assert_eq!(Fq::r() * Fq::r_inv(), Fq::one());
+    assert_eq!(Fr::r_inv() * Fr::r(), Fr::one());
+    assert_eq!(Fq::r(), Fq::one() * Fq::r());
+    assert_eq!(Fr::r(), Fr::r() * Fr::one());
+    assert_eq!(Fq::one().to_montgomery(), Fq::r());
+    assert_eq!(Fq::one().from_montgomery(), Fq::r_inv());
+}
+
+#[test]
+#[cfg(all(target_os = "zkvm", target_arch = "riscv32"))]
+fn r0_modulus_bytes() {
     assert_eq!(Fq::modulus(), U256::from_le_slice(&Fq::modulus_bytes()));
     assert_eq!(Fr::modulus(), U256::from_le_slice(&Fr::modulus_bytes()));
 }
 
 #[test]
-fn sqrt_fq() {
-    // from zcash test_proof.cpp
+fn r0_basic_mul() {
+    // let two = Fq::from(U256::from(2u64));
+    // let three = Fq::from(U256::from(3u64));
+    let two = Fq::from_str("2").unwrap();
+    let three = Fq::from_str("3").unwrap();
+
+    assert_eq!(U256::from(two * three), U256::from(6u64));
+    assert_eq!(Fq::one() * two, two);
+    assert_eq!(Fq::one() * three, three);
+    assert_eq!(Fq::one(), two * Fq::from_str("10944121435919637611123202872628637544348155578648911831344518947322613104292").unwrap());
+}
+
+#[test]
+fn r0_simple_square() {
+    // Uses the constant values from the sqrt test
     let fq1 = Fq::from_str("5204065062716160319596273903996315000119019512886596366359652578430118331601").unwrap();
     let fq2 = Fq::from_str("348579348568").unwrap();
 
-    assert_eq!(fq1, fq2.sqrt().expect("348579348568 is quadratic residue"));
+    assert_eq!(fq1 * fq1, fq2);
 }
