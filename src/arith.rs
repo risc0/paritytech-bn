@@ -964,6 +964,51 @@ fn tnz_test_mul() {
 // TODO: Rename, sort, etc the `tnz` tests
 
 #[test]
+fn tnz_basic_arith() {
+    let prime = U256::from([
+        0x3C208C16D87CFD47,
+        0x97816A916871CA8D,
+        0xB85045B68181585D,
+        0x30644E72E131A029,
+    ]);
+    let mut val = U256::zero();
+    val.add(&U256::zero(), &prime);
+    assert_eq!(val, U256::zero());
+
+    let mut val = U256::one();
+    val.add(&U256::zero(), &prime);
+    assert_eq!(val, U256::one());
+
+    let mut val = U256::zero();
+    val.add(&U256::one(), &prime);
+    assert_eq!(val, U256::one());
+
+    let mut val = U256::one();
+    val.sub(&U256::one(), &prime);
+    assert_eq!(val, U256::zero());
+
+    let mut val = U256::one();
+    val.sub(&U256::zero(), &prime);
+    assert_eq!(val, U256::one());
+
+    let mut val = U256::zero();
+    val.sub(&U256::one(), &prime);
+    val.neg(&prime);
+    assert_eq!(val, U256::one());
+
+    let mut val = U256::zero();
+    val.sub(&U256::zero(), &prime);
+    assert_eq!(val, U256::zero());
+
+    assert!(U256::zero().is_even());
+    assert!(!U256::one().is_even());
+
+    let mut val = U256::one();
+    val.invert(&prime);
+    assert_eq!(val, U256::one());
+}
+
+#[test]
 fn tnz_from_le_slice() {
     let one_bytes: [u8; 32] = [
         1, 0, 0, 0, 0, 0, 0, 0,
@@ -993,4 +1038,13 @@ fn tnz_from_le_slice() {
         0x0000000000320000,
         0x220000003C000000,
     ]));
+
+    assert_eq!(val_from_le.get_bit(0), Some(true));
+    assert_eq!(val_from_le.get_bit(1), Some(true));
+    assert_eq!(val_from_le.get_bit(2), Some(true));
+    assert_eq!(val_from_le.get_bit(3), Some(true));
+    assert_eq!(val_from_le.get_bit(4), Some(false));
+    assert_eq!(val_from_le.get_bit(5), Some(true));
+    assert_eq!(val_from_le.get_bit(6), Some(false));
+    assert_eq!(val_from_le.get_bit(7), Some(false));
 }
