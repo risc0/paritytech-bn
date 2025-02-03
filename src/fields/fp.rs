@@ -182,7 +182,7 @@ macro_rules! field_impl {
 
 #[cfg(all(target_os = "zkvm", target_arch = "riscv32"))]
 macro_rules! field_impl {
-    ($name:ident, $modulus:expr, $rsquared:expr, $rcubed:expr, $one:expr, $inv:expr, $rinv:expr) => {
+    ($name:ident, $modulus:expr, $rsquared:expr, $rcubed:expr, $one:expr, $inv:expr, $rinv:expr, $modsqr:expr) => {
         #[derive(Copy, Clone, PartialEq, Eq, Debug)]
         #[repr(C)]
         pub struct $name(U256);
@@ -258,9 +258,13 @@ macro_rules! field_impl {
 
             /// Returns the modulus
             #[inline]
-            #[allow(dead_code)]
             pub fn modulus() -> U256 {
                 U256::from($modulus)
+            }
+
+            /// Returns the square of the modulus
+            pub fn modulus_squared() -> U512 {
+                U512::from($modsqr)
             }
 
             const fn modulus_bytes() -> [u8; 32] {
@@ -504,6 +508,16 @@ field_impl!(
         0x87, 0xec, 0x11, 0xe1, 0xa9, 0xf5, 0x0e, 0x09,
         0x5d, 0x5d, 0xb8, 0xae, 0xe4, 0x0d, 0x26, 0xc8,
         0x1c, 0x55, 0xc5, 0x82, 0x51, 0xf9, 0xeb, 0x15,
+    ],
+    [
+        0x08C3EB27E0000001,
+        0xC7F26223DCB34000,
+        0xFFE9A62C68C9BB7F,
+        0xA6CE1975E821DDB0,
+        0x2C77527B47B62FE7,
+        0x85F73BB0D379D3DF,
+        0x599A6F7C0348D21C,
+        0x0925C4B8763CBF9C,
     ]
 );
 
@@ -541,6 +555,16 @@ field_impl!(
         0xf8, 0xed, 0x78, 0x02, 0x85, 0x22, 0x20, 0xeb,
         0xd9, 0x92, 0x44, 0xb7, 0xcf, 0xe9, 0x63, 0xcf,
         0x39, 0xc6, 0xe5, 0x59, 0x71, 0x15, 0x67, 0x2e,
+    ],
+    [
+        0x3B5458A2275D69B1,
+        0xA602072D09EAC101,
+        0x4A50189C6D96CADC,
+        0x04689E957A1242C8,
+        0x26EDFA5C34C6B38D,
+        0xB00B855116375606,
+        0x599A6F7C0348D21C,
+        0x0925C4B8763CBF9C,
     ]
 );
 
