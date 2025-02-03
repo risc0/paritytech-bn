@@ -1,12 +1,9 @@
 [package]
 name = "substrate-bn"
 version = "0.6.0"
-authors = [
-  "Sean Bowe <ewillbefull@gmail.com>",
-  "Parity Technologies <admin@parity.io>",
-]
+authors = ["Sean Bowe <ewillbefull@gmail.com>", "Parity Technologies <admin@parity.io>"]
 description = "Pairing cryptography with the Barreto-Naehrig curve"
-keywords = ["pairing", "crypto", "cryptography"]
+keywords = ["pairing","crypto","cryptography"]
 readme = "README.md"
 homepage = "https://github.com/paritytech/bn"
 repository = "https://github.com/paritytech/bn"
