@@ -198,7 +198,6 @@ macro_rules! field_impl {
 
         impl $name {
             pub fn from_str(s: &str) -> Option<Self> {
-                // TODO: We could make this a little more efficient for the zkVM, but it seems unnecessary
                 let ints: Vec<_> = {
                     let mut acc = Self::zero();
                     (0..11).map(|_| {let tmp = acc; acc = acc + Self::one(); tmp}).collect()

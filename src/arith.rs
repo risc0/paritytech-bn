@@ -963,7 +963,6 @@ fn tnz_test_mul() {
 // U512: new, from_slice, random, get_bit, interpret
 // TODO: Rename, sort, etc the `tnz` tests
 
-// TODO: But need to test from_le_slice
 #[test]
 fn tnz_from_le_slice() {
     let one_bytes: [u8; 32] = [
