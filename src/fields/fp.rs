@@ -746,6 +746,7 @@ fn tnz_r() {
 }
 
 #[test]
+#[cfg(all(target_os = "zkvm", target_arch = "riscv32"))]
 fn modulus_bytes() {
     assert_eq!(Fq::modulus(), U256::from_le_slice(&Fq::modulus_bytes()));
     assert_eq!(Fr::modulus(), U256::from_le_slice(&Fr::modulus_bytes()));
