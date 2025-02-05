@@ -1017,22 +1017,22 @@ fn r0_from_le_slice() {
     ];
     assert_eq!(U256::from_le_slice(&one_bytes), U256::one());
 
-    const le_bytes: [u8; 32] = [
+    const LE_BYTES: [u8; 32] = [
         47, 24, 11, 13, 33, 22, 10, 20,
         0, 40, 0, 0, 0, 0, 0, 0,
         0, 0, 50, 0, 0, 0, 0, 0,
         0, 0, 0, 60, 0, 0, 0, 34,
     ];
-    const val_from_le: U256 = U256::from_le_slice(&le_bytes);
+    const VAL_FROM_LE: U256 = U256::from_le_slice(&LE_BYTES);
     let be_bytes: [u8; 32] = [
         34, 0, 0, 0, 60, 0, 0, 0,
         0, 0, 0, 0, 0, 50, 0, 0,
         0, 0, 0, 0, 0, 0, 40, 0,
         20, 10, 22, 33, 13, 11, 24, 47,
     ];
-    assert_eq!(val_from_le, U256::from_slice(&be_bytes).unwrap());
+    assert_eq!(VAL_FROM_LE, U256::from_slice(&be_bytes).unwrap());
     assert_eq!(
-        val_from_le,
+        VAL_FROM_LE,
         U256::from([
             0x140A16210D0B182F,
             0x0000000000002800,
@@ -1041,12 +1041,12 @@ fn r0_from_le_slice() {
         ])
     );
 
-    assert_eq!(val_from_le.get_bit(0), Some(true));
-    assert_eq!(val_from_le.get_bit(1), Some(true));
-    assert_eq!(val_from_le.get_bit(2), Some(true));
-    assert_eq!(val_from_le.get_bit(3), Some(true));
-    assert_eq!(val_from_le.get_bit(4), Some(false));
-    assert_eq!(val_from_le.get_bit(5), Some(true));
-    assert_eq!(val_from_le.get_bit(6), Some(false));
-    assert_eq!(val_from_le.get_bit(7), Some(false));
+    assert_eq!(VAL_FROM_LE.get_bit(0), Some(true));
+    assert_eq!(VAL_FROM_LE.get_bit(1), Some(true));
+    assert_eq!(VAL_FROM_LE.get_bit(2), Some(true));
+    assert_eq!(VAL_FROM_LE.get_bit(3), Some(true));
+    assert_eq!(VAL_FROM_LE.get_bit(4), Some(false));
+    assert_eq!(VAL_FROM_LE.get_bit(5), Some(true));
+    assert_eq!(VAL_FROM_LE.get_bit(6), Some(false));
+    assert_eq!(VAL_FROM_LE.get_bit(7), Some(false));
 }

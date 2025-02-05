@@ -159,9 +159,6 @@ impl Mul for Fq2 {
         let rhs1: [u32; 8] = bytemuck::cast(U256::from(other.c1).0);
         let rhs = [rhs0, rhs1];
 
-        let irred_poly0: [u32; 8] = bytemuck::cast(U256::from(fq_non_residue()).0);
-        let irred_poly = [irred_poly0, [0; 8]];
-
         let prime: [u32; 8] = bytemuck::cast(Fq::modulus().0);
         let prime_sqr: [u32; 16] = bytemuck::cast(Fq::modulus_squared().0);
 
