@@ -16,17 +16,10 @@ macro_rules! field_impl {
         pub struct $name(U256);
 
         impl From<$name> for U256 {
-            #[cfg(not(all(target_os = "zkvm", target_arch = "riscv32")))]
             #[inline]
             fn from(mut a: $name) -> Self {
                 a.0.mul(&U256::one(), &U256::from($modulus), $inv);
 
-                a.0
-            }
-
-            #[cfg(all(target_os = "zkvm", target_arch = "riscv32"))]
-            #[inline]
-            fn from(mut a: $name) -> Self {
                 a.0
             }
         }
