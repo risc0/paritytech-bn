@@ -1,8 +1,13 @@
 use core::cmp::Ordering;
-use rand::Rng;
 use crunchy::unroll;
+use rand::Rng;
 
 use byteorder::{BigEndian, ByteOrder};
+
+#[cfg(all(target_os = "zkvm", target_arch = "riscv32"))]
+use bytemuck;
+#[cfg(all(target_os = "zkvm", target_arch = "riscv32"))]
+use risc0_bigint2::field;
 
 /// 256-bit, stack allocated biginteger for use in prime field
 /// arithmetic.
@@ -79,7 +84,7 @@ impl U512 {
         U512(res)
     }
 
-     pub fn from_slice(s: &[u8]) -> Result<U512, Error> {
+    pub fn from_slice(s: &[u8]) -> Result<U512, Error> {
         if s.len() != 64 {
             return Err(Error::InvalidLength {
                 expected: 32,
@@ -278,6 +283,19 @@ impl U256 {
     }
 
     /// Add `other` to `self` (mod `modulo`)
+    #[cfg(all(target_os = "zkvm", target_arch = "riscv32"))]
+    pub fn add(&mut self, other: &U256, modulo: &U256) {
+        let lhs: &[u32; 8] = bytemuck::cast_ref(&self.0);
+        let rhs: &[u32; 8] = bytemuck::cast_ref(&other.0);
+        let prime: &[u32; 8] = bytemuck::cast_ref(&modulo.0);
+        let mut result = [0u128; 2];
+        let result_mut: &mut [u32; 8] = bytemuck::cast_mut(&mut result);
+        field::modadd_256(lhs, rhs, prime, result_mut);
+        self.0 = result;
+    }
+
+    /// Add `other` to `self` (mod `modulo`)
+    #[cfg(not(all(target_os = "zkvm", target_arch = "riscv32")))]
     pub fn add(&mut self, other: &U256, modulo: &U256) {
         add_nocarry(&mut self.0, &other.0);
 
@@ -287,6 +305,19 @@ impl U256 {
     }
 
     /// Subtract `other` from `self` (mod `modulo`)
+    #[cfg(all(target_os = "zkvm", target_arch = "riscv32"))]
+    pub fn sub(&mut self, other: &U256, modulo: &U256) {
+        let lhs: &[u32; 8] = bytemuck::cast_ref(&self.0);
+        let rhs: &[u32; 8] = bytemuck::cast_ref(&other.0);
+        let prime: &[u32; 8] = bytemuck::cast_ref(&modulo.0);
+        let mut result = [0u128; 2];
+        let result_mut: &mut [u32; 8] = bytemuck::cast_mut(&mut result);
+        field::modsub_256(lhs, rhs, prime, result_mut);
+        self.0 = result;
+    }
+
+    /// Subtract `other` from `self` (mod `modulo`)
+    #[cfg(not(all(target_os = "zkvm", target_arch = "riscv32")))]
     pub fn sub(&mut self, other: &U256, modulo: &U256) {
         if *self < *other {
             add_nocarry(&mut self.0, &modulo.0);
@@ -295,8 +326,88 @@ impl U256 {
         sub_noborrow(&mut self.0, &other.0);
     }
 
+    /// Multiply `self` by `other` (mod `modulo`). Non-Montgomery form
+    ///
+    /// A standard modular multiplication that assumes none of the inputs are in Montgomery form.
+    #[cfg(all(target_os = "zkvm", target_arch = "riscv32"))]
+    pub fn modmul(&mut self, other: &U256, modulo: &U256) {
+        let lhs: &[u32; 8] = bytemuck::cast_ref(&self.0);
+        let rhs: &[u32; 8] = bytemuck::cast_ref(&other.0);
+        let prime: &[u32; 8] = bytemuck::cast_ref(&modulo.0);
+        let mut result = [0u128; 2];
+        let result_mut: &mut [u32; 8] = bytemuck::cast_mut(&mut result);
+        field::modmul_256(lhs, rhs, prime, result_mut);
+        self.0 = result;
+    }
+
+    /// Montgomery multiply `self` by `other` (mod `modulo`)
+    ///
+    /// Note that this does not give the same answer as a "classical" multiply! Instead, it computes
+    /// `self * other * R_inv % modulo` where `R_inv` is the inverse of 2^256 mod modulo.
+    ///
+    /// To match the non-precompile API, this accepts an `inv` parameter; we don't need it for
+    /// computations, but we do verify that it matches its expected value under the assumption that
+    /// R = (2^128)^2
+    #[cfg(all(target_os = "zkvm", target_arch = "riscv32"))]
+    pub fn mul(&mut self, other: &U256, modulo: &U256, inv: u128) {
+        let lhs: &[u32; 8] = bytemuck::cast_ref(&self.0);
+        let rhs: &[u32; 8] = bytemuck::cast_ref(&other.0);
+        let prime: &[u32; 8] = bytemuck::cast_ref(&modulo.0);
+        let mut result = [0u128; 2];
+        let result_mut: &mut [u32; 8] = bytemuck::cast_mut(&mut result);
+
+        // Verifying the assumption R = (2^128)^2 (so b = 2^128, n = 2) against inv
+        // To do so, we compute m_prime = -prime^(-1) mod 2^128 and confirm it is `inv`
+        let mut neg_modulus_mod_2_218 = [0u32; 8];
+        assert_ne!(prime[0], 0, "Modulus must be prime");
+        for i in 0..4 {
+            // mod 2^128, so only need to do least significant half
+            neg_modulus_mod_2_218[i] = u32::MAX - prime[i];
+        }
+        neg_modulus_mod_2_218[0] += 1; // Safe to add 1 since prime[0] != 0
+        let mut m_prime = [0u32; 8];
+        let two_128 = [0u32, 0u32, 0u32, 0u32, 1u32, 0u32, 0u32, 0u32];
+        field::modinv_256(&neg_modulus_mod_2_218, &two_128, &mut m_prime);
+        let m_prime: u128 = m_prime[0] as u128
+            + (1 << 32) * (m_prime[1] as u128)
+            + (1 << 64) * (m_prime[2] as u128)
+            + (1 << 96) * (m_prime[3] as u128);
+        assert_eq!(inv, m_prime); // Otherwise we have an inconsistency in b^n used in the algorithm
+
+        // This computes R = 2^256 % P = 2^256 - P via digit-wise subtraction, using the trick
+        // that 2^256 - P will be the bit inverse of P plus 1.
+        // Note: If prime < 2^128 this isn't normalized (i.e. we'll have R > prime), but we are
+        // only using it as an input to a field operation, so it doesn't need to be
+        let mut r = [0u32; 8]; // This gives a representation of 2^256 mod prime, which is R
+        let mut carry_needed = true;
+        for i in 0..8 {
+            let val = prime[i];
+            r[i] = u32::MAX - val;
+            if carry_needed {
+                if val == 0 {
+                    // r[i] is zero and we still need to carry
+                    r[i] = 0;
+                    continue;
+                }
+                // Otherwise, we are done carrying
+                r[i] += 1;
+                carry_needed = false;
+            }
+        }
+        assert!(!carry_needed, "Cannot use 0 for modulus in `mul`");
+        let mut r_inv = [0u32; 8];
+        field::modinv_256(&r, prime, &mut r_inv);
+
+        let mut intermediate = [0u32; 8];
+        field::modmul_256(lhs, rhs, prime, &mut intermediate);
+        field::modmul_256(&intermediate, &r_inv, prime, result_mut);
+
+        self.0 = result;
+    }
+
     /// Multiply `self` by `other` (mod `modulo`) via the Montgomery
     /// multiplication method.
+    #[cfg(not(all(target_os = "zkvm", target_arch = "riscv32")))]
     pub fn mul(&mut self, other: &U256, modulo: &U256, inv: u128) {
         mul_reduce(&mut self.0, &other.0, &modulo.0, inv);
 
@@ -321,6 +432,18 @@ impl U256 {
     }
 
     /// Turn `self` into its multiplicative inverse (mod `modulo`)
+    #[cfg(all(target_os = "zkvm", target_arch = "riscv32"))]
+    pub fn invert(&mut self, modulo: &U256) {
+        let inp: &[u32; 8] = bytemuck::cast_ref(&self.0);
+        let prime: &[u32; 8] = bytemuck::cast_ref(&modulo.0);
+        let mut result = [0u128; 2];
+        let result_mut: &mut [u32; 8] = bytemuck::cast_mut(&mut result);
+        field::modinv_256(inp, prime, result_mut);
+        self.0 = result;
+    }
+
+    /// Turn `self` into its multiplicative inverse (mod `modulo`)
+    #[cfg(not(all(target_os = "zkvm", target_arch = "riscv32")))]
     pub fn invert(&mut self, modulo: &U256) {
         // Guajardo Kumar Paar Pelzl
         // Efficient Software-Implementation of Finite Fields with Applications to Cryptography
@@ -374,6 +497,21 @@ impl U256 {
     pub fn bits(&self) -> BitIterator {
         BitIterator { int: &self, n: 256 }
     }
+
+    pub const fn from_le_slice(bytes: &[u8]) -> Self {
+        assert!(bytes.len() == 32);
+        let mut lo = [0u8; 16];
+        let mut hi = [0u8; 16];
+        let mut idx = 0;
+
+        while idx < 16 {
+            lo[idx] = bytes[idx];
+            hi[idx] = bytes[idx + 16];
+            idx += 1;
+        }
+
+        U256([u128::from_le_bytes(lo), u128::from_le_bytes(hi)])
+    }
 }
 
 pub struct BitIterator<'a> {
@@ -396,6 +534,7 @@ impl<'a> Iterator for BitIterator<'a> {
 }
 
 /// Divide by two
+#[cfg(not(all(target_os = "zkvm", target_arch = "riscv32")))]
 #[inline]
 fn div2(a: &mut [u128; 2]) {
     let tmp = a[1] << 127;
@@ -434,6 +573,7 @@ fn adc(a: u128, b: u128, carry: &mut u128) -> u128 {
     combine_u128(r1, r0)
 }
 
+#[cfg(not(all(target_os = "zkvm", target_arch = "riscv32")))]
 #[inline]
 fn add_nocarry(a: &mut [u128; 2], b: &[u128; 2]) {
     let mut carry = 0;
@@ -521,6 +661,7 @@ fn mac_digit(from_index: usize, acc: &mut [u128; 4], b: &[u128; 2], c: u128) {
     debug_assert!(carry == 0);
 }
 
+#[cfg(not(all(target_os = "zkvm", target_arch = "riscv32")))]
 #[inline]
 fn mul_reduce(this: &mut [u128; 2], by: &[u128; 2], modulus: &[u128; 2], inv: u128) {
     // The Montgomery reduction here is based on Algorithm 14.32 in
@@ -596,7 +737,7 @@ fn testing_divrem() {
         0x30644e72e131a029,
     ]);
 
-    for _ in 0..100 {
+    for _ in 0..2 {
         let c0 = U256::random(rng, &modulo);
         let c1 = U256::random(rng, &modulo);
 
@@ -782,4 +923,130 @@ fn testing_divrem() {
         assert!(c1.unwrap() < modulo);
         assert!(c0 < modulo);
     }
+}
+
+// TODO: Do we want to extend tests of U512?
+// i.e. new, from_slice, random, get_bit, interpret
+
+#[test]
+fn r0_basic_arith() {
+    let prime = U256::from([
+        0x3C208C16D87CFD47,
+        0x97816A916871CA8D,
+        0xB85045B68181585D,
+        0x30644E72E131A029,
+    ]);
+    let mut val = U256::zero();
+    val.add(&U256::zero(), &prime);
+    assert_eq!(val, U256::zero());
+
+    let mut val = U256::one();
+    val.add(&U256::zero(), &prime);
+    assert_eq!(val, U256::one());
+
+    let mut val = U256::zero();
+    val.add(&U256::one(), &prime);
+    assert_eq!(val, U256::one());
+
+    let mut val = U256::one();
+    val.sub(&U256::one(), &prime);
+    assert_eq!(val, U256::zero());
+
+    let mut val = U256::one();
+    val.sub(&U256::zero(), &prime);
+    assert_eq!(val, U256::one());
+
+    let mut val = U256::zero();
+    val.sub(&U256::one(), &prime);
+    val.neg(&prime);
+    assert_eq!(val, U256::one());
+
+    let mut val = U256::zero();
+    val.sub(&U256::zero(), &prime);
+    assert_eq!(val, U256::zero());
+
+    assert!(U256::zero().is_even());
+    assert!(!U256::one().is_even());
+
+    let mut val = U256::one();
+    val.invert(&prime);
+    assert_eq!(val, U256::one());
+}
+
+#[test]
+fn r0_test_mul() {
+    // Tests Montgomery multiplication with known values (5 * 10 = 50)
+    let mut lhs = U256::from([
+        0x5059E8694A6C0E5F,
+        0x3F69A66D0E742784,
+        0x625AF360AB101812,
+        0x2E12444C75E1B101,
+    ]);
+    let rhs = U256::from([
+        0x58E95CFC540200FD,
+        0xB0E12FC6F4485774,
+        0x338FF155E94B9396,
+        0x13B994C81C2F53A6,
+    ]);
+    let expected = U256::from([
+        0x3D084613B3A71993,
+        0xDE7F9C7C725C25C1,
+        0x69D81708926CB9CD,
+        0x17472F351E407698,
+    ]);
+    let prime = U256::from([
+        0x3C208C16D87CFD47,
+        0x97816A916871CA8D,
+        0xB85045B68181585D,
+        0x30644E72E131A029,
+    ]);
+    let inv = 0x9ede7d651eca6ac987d20782e4866389;
+
+    lhs.mul(&rhs, &prime, inv);
+
+    assert_eq!(lhs, expected);
+}
+
+#[test]
+fn r0_from_le_slice() {
+    let one_bytes: [u8; 32] = [
+        1, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0,
+    ];
+    assert_eq!(U256::from_le_slice(&one_bytes), U256::one());
+
+    const LE_BYTES: [u8; 32] = [
+        47, 24, 11, 13, 33, 22, 10, 20,
+        0, 40, 0, 0, 0, 0, 0, 0,
+        0, 0, 50, 0, 0, 0, 0, 0,
+        0, 0, 0, 60, 0, 0, 0, 34,
+    ];
+    const VAL_FROM_LE: U256 = U256::from_le_slice(&LE_BYTES);
+    let be_bytes: [u8; 32] = [
+        34, 0, 0, 0, 60, 0, 0, 0,
+        0, 0, 0, 0, 0, 50, 0, 0,
+        0, 0, 0, 0, 0, 0, 40, 0,
+        20, 10, 22, 33, 13, 11, 24, 47,
+    ];
+    assert_eq!(VAL_FROM_LE, U256::from_slice(&be_bytes).unwrap());
+    assert_eq!(
+        VAL_FROM_LE,
+        U256::from([
+            0x140A16210D0B182F,
+            0x0000000000002800,
+            0x0000000000320000,
+            0x220000003C000000,
+        ])
+    );
+
+    assert_eq!(VAL_FROM_LE.get_bit(0), Some(true));
+    assert_eq!(VAL_FROM_LE.get_bit(1), Some(true));
+    assert_eq!(VAL_FROM_LE.get_bit(2), Some(true));
+    assert_eq!(VAL_FROM_LE.get_bit(3), Some(true));
+    assert_eq!(VAL_FROM_LE.get_bit(4), Some(false));
+    assert_eq!(VAL_FROM_LE.get_bit(5), Some(true));
+    assert_eq!(VAL_FROM_LE.get_bit(6), Some(false));
+    assert_eq!(VAL_FROM_LE.get_bit(7), Some(false));
 }

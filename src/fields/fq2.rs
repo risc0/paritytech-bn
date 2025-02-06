@@ -1,7 +1,12 @@
+use crate::arith::{U256, U512};
+use crate::fields::{const_fq, FieldElement, Fq};
 use core::ops::{Add, Mul, Neg, Sub};
 use rand::Rng;
-use crate::fields::{const_fq, FieldElement, Fq};
-use crate::arith::{U256, U512};
+
+#[cfg(all(target_os = "zkvm", target_arch = "riscv32"))]
+use bytemuck;
+#[cfg(all(target_os = "zkvm", target_arch = "riscv32"))]
+use risc0_bigint2::field;
 
 #[inline]
 fn fq_non_residue() -> Fq {
@@ -74,6 +79,16 @@ impl Fq2 {
     pub fn imaginary(&self) -> &Fq {
         &self.c1
     }
+
+    pub const fn from_mont_le_slice(bytes: &[u8]) -> Self {
+        // c0 then c1 order
+        assert!(bytes.len() == 64);
+        let (lo, hi) = bytes.split_at(32);
+        Fq2 {
+            c0: Fq::from_mont_le_slice(lo),
+            c1: Fq::from_mont_le_slice(hi),
+        }
+    }
 }
 
 impl FieldElement for Fq2 {
@@ -110,7 +125,8 @@ impl FieldElement for Fq2 {
         let ab = self.c0 * self.c1;
 
         Fq2 {
-            c0: (self.c1 * fq_non_residue() + self.c0) * (self.c0 + self.c1) - ab
+            c0: (self.c1 * fq_non_residue() + self.c0) * (self.c0 + self.c1)
+                - ab
                 - ab * fq_non_residue(),
             c1: ab + ab,
         }
@@ -133,6 +149,30 @@ impl FieldElement for Fq2 {
 impl Mul for Fq2 {
     type Output = Fq2;
 
+    #[cfg(all(target_os = "zkvm", target_arch = "riscv32"))]
+    fn mul(self, other: Fq2) -> Fq2 {
+        let lhs0: [u32; 8] = bytemuck::cast(U256::from(self.c0).0);
+        let lhs1: [u32; 8] = bytemuck::cast(U256::from(self.c1).0);
+        let lhs = [lhs0, lhs1];
+
+        let rhs0: [u32; 8] = bytemuck::cast(U256::from(other.c0).0);
+        let rhs1: [u32; 8] = bytemuck::cast(U256::from(other.c1).0);
+        let rhs = [rhs0, rhs1];
+
+        let prime: [u32; 8] = bytemuck::cast(Fq::modulus().0);
+        let prime_sqr: [u32; 16] = bytemuck::cast(Fq::modulus_squared().0);
+
+        let mut result_mut = [[0u32; 8]; 2];
+
+        field::extfield_xxone_mul_256(&lhs, &rhs, &prime, &prime_sqr, &mut result_mut);
+        let result: &[[u128; 2]; 2] = bytemuck::cast_ref(&result_mut);
+        Fq2 {
+            c0: Fq::new(U256(result[0])).unwrap(),
+            c1: Fq::new(U256(result[1])).unwrap(),
+        }
+    }
+
+    #[cfg(not(all(target_os = "zkvm", target_arch = "riscv32")))]
     fn mul(self, other: Fq2) -> Fq2 {
         // Devegili OhEig Scott Dahab
         //     Multiplication and Squaring on Pairing-Friendly Fields.pdf
@@ -231,30 +271,96 @@ impl Fq2 {
     }
 }
 
-
 #[test]
 fn sqrt_fq2() {
     // from zcash test_proof.cpp
     let x1 = Fq2::new(
-        Fq::from_str("12844195307879678418043983815760255909500142247603239203345049921980497041944").unwrap(),
-        Fq::from_str("7476417578426924565731404322659619974551724117137577781074613937423560117731").unwrap(),
+        Fq::from_str(
+            "12844195307879678418043983815760255909500142247603239203345049921980497041944",
+        )
+        .unwrap(),
+        Fq::from_str(
+            "7476417578426924565731404322659619974551724117137577781074613937423560117731",
+        )
+        .unwrap(),
     );
 
     let x2 = Fq2::new(
-        Fq::from_str("3345897230485723946872934576923485762803457692345760237495682347502347589474").unwrap(),
-        Fq::from_str("1234912378405347958234756902345768290345762348957605678245967234857634857676").unwrap(),
+        Fq::from_str(
+            "3345897230485723946872934576923485762803457692345760237495682347502347589474",
+        )
+        .unwrap(),
+        Fq::from_str(
+            "1234912378405347958234756902345768290345762348957605678245967234857634857676",
+        )
+        .unwrap(),
     );
 
     assert_eq!(x2.sqrt().unwrap(), x1);
 
     // i is sqrt(-1)
-    assert_eq!(
-        Fq2::one().neg().sqrt().unwrap(),
-        Fq2::i(),
-    );
+    assert_eq!(Fq2::one().neg().sqrt().unwrap(), Fq2::i(),);
 
     // no sqrt for (1 + 2i)
     assert!(
-        Fq2::new(Fq::from_str("1").unwrap(), Fq::from_str("2").unwrap()).sqrt().is_none()
+        Fq2::new(Fq::from_str("1").unwrap(), Fq::from_str("2").unwrap())
+            .sqrt()
+            .is_none()
     );
+}
+
+#[test]
+fn r0_simple_square() {
+    // based on sqrt_fq2
+    let x1 = Fq2::new(
+        Fq::from_str(
+            "12844195307879678418043983815760255909500142247603239203345049921980497041944",
+        )
+        .unwrap(),
+        Fq::from_str(
+            "7476417578426924565731404322659619974551724117137577781074613937423560117731",
+        )
+        .unwrap(),
+    );
+    let x2 = Fq2::new(
+        Fq::from_str(
+            "3345897230485723946872934576923485762803457692345760237495682347502347589474",
+        )
+        .unwrap(),
+        Fq::from_str(
+            "1234912378405347958234756902345768290345762348957605678245967234857634857676",
+        )
+        .unwrap(),
+    );
+
+    assert_eq!(x1 * x1, x2);
+}
+
+#[test]
+fn r0_simple_times() {
+    assert_eq!(Fq2::one() * Fq2::one(), Fq2::one());
+}
+
+#[test]
+fn r0_from_mont_le_slice() {
+    // Test reading in the known Montgomery form of 1 + i in Fq2
+    let montgomery_one_fq = U256::from([
+        0xd35d438dc58f0d9d,
+        0xa78eb28f5c70b3d,
+        0x666ea36f7879462c,
+        0xe0a77c19a07df2f,
+    ]);
+    let mut mont_one_fq_bytes = [0u8; 32];
+    montgomery_one_fq
+        .to_big_endian(&mut mont_one_fq_bytes)
+        .unwrap();
+    mont_one_fq_bytes.reverse();
+    let mut mont_one_fq2_bytes = [0u8; 64];
+    let mut mont_i_fq2_bytes = [0u8; 64];
+    for idx in 0..32 {
+        mont_one_fq2_bytes[idx] = mont_one_fq_bytes[idx];
+        mont_i_fq2_bytes[idx + 32] = mont_one_fq_bytes[idx];
+    }
+    assert_eq!(Fq2::one(), Fq2::from_mont_le_slice(&mont_one_fq2_bytes));
+    assert_eq!(Fq2::i(), Fq2::from_mont_le_slice(&mont_i_fq2_bytes));
 }

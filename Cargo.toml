@@ -23,6 +23,18 @@ crunchy = "0.2.1"
 lazy_static = { version = "1.4.0", features = ["spin_no_std"] }
 rustc-hex = { version = "2", default-features = false }
 
+[target.'cfg(all(target_os = "zkvm", target_arch = "riscv32"))'.dependencies]
+bytemuck = "1"
+crypto-bigint = "0.5"
+# TODO switch this back to crates.io before tagging release
+# risc0-bigint2 = { version = "1.2.1", features = ["unstable"] }
+risc0-bigint2 = { git = "https://github.com/risc0/risc0.git", rev = "ac029674f588d6f913dab3f5ea96683c6a71b869", features = ["unstable"] }
+
+[target.'cfg(all(target_os = "zkvm", target_arch = "riscv32"))'.dev-dependencies]
+risc0-zkvm = { version = "1.2.1", default-features = false, features = [
+  "std",
+  "getrandom",
+] }
+
 [dev-dependencies]
 rand = { version = "0.8.3", features = ["std_rng"] }
-
