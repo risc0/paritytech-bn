@@ -282,8 +282,8 @@ impl U256 {
         }
     }
 
-    #[cfg(all(target_os = "zkvm", target_arch = "riscv32"))]
     /// Add `other` to `self` (mod `modulo`)
+    #[cfg(all(target_os = "zkvm", target_arch = "riscv32"))]
     pub fn add(&mut self, other: &U256, modulo: &U256) {
         let lhs: &[u32; 8] = bytemuck::cast_ref(&self.0);
         let rhs: &[u32; 8] = bytemuck::cast_ref(&other.0);
@@ -294,8 +294,8 @@ impl U256 {
         self.0 = result;
     }
 
-    #[cfg(not(all(target_os = "zkvm", target_arch = "riscv32")))]
     /// Add `other` to `self` (mod `modulo`)
+    #[cfg(not(all(target_os = "zkvm", target_arch = "riscv32")))]
     pub fn add(&mut self, other: &U256, modulo: &U256) {
         add_nocarry(&mut self.0, &other.0);
 
@@ -304,8 +304,8 @@ impl U256 {
         }
     }
 
-    #[cfg(all(target_os = "zkvm", target_arch = "riscv32"))]
     /// Subtract `other` from `self` (mod `modulo`)
+    #[cfg(all(target_os = "zkvm", target_arch = "riscv32"))]
     pub fn sub(&mut self, other: &U256, modulo: &U256) {
         let lhs: &[u32; 8] = bytemuck::cast_ref(&self.0);
         let rhs: &[u32; 8] = bytemuck::cast_ref(&other.0);
@@ -316,8 +316,8 @@ impl U256 {
         self.0 = result;
     }
 
-    #[cfg(not(all(target_os = "zkvm", target_arch = "riscv32")))]
     /// Subtract `other` from `self` (mod `modulo`)
+    #[cfg(not(all(target_os = "zkvm", target_arch = "riscv32")))]
     pub fn sub(&mut self, other: &U256, modulo: &U256) {
         if *self < *other {
             add_nocarry(&mut self.0, &modulo.0);
@@ -326,10 +326,10 @@ impl U256 {
         sub_noborrow(&mut self.0, &other.0);
     }
 
-    #[cfg(all(target_os = "zkvm", target_arch = "riscv32"))]
     /// Multiply `self` by `other` (mod `modulo`). Non-Montgomery form
     ///
     /// A standard modular multiplication that assumes none of the inputs are in Montgomery form.
+    #[cfg(all(target_os = "zkvm", target_arch = "riscv32"))]
     pub fn modmul(&mut self, other: &U256, modulo: &U256) {
         let lhs: &[u32; 8] = bytemuck::cast_ref(&self.0);
         let rhs: &[u32; 8] = bytemuck::cast_ref(&other.0);
@@ -340,7 +340,6 @@ impl U256 {
         self.0 = result;
     }
 
-    #[cfg(all(target_os = "zkvm", target_arch = "riscv32"))]
     /// Montgomery multiply `self` by `other` (mod `modulo`)
     ///
     /// Note that this does not give the same answer as a "classical" multiply! Instead, it computes
@@ -349,6 +348,7 @@ impl U256 {
     /// To match the non-precompile API, this accepts an `inv` parameter; we don't need it for
     /// computations, but we do verify that it matches its expected value under the assumption that
     /// R = (2^128)^2
+    #[cfg(all(target_os = "zkvm", target_arch = "riscv32"))]
     pub fn mul(&mut self, other: &U256, modulo: &U256, inv: u128) {
         let lhs: &[u32; 8] = bytemuck::cast_ref(&self.0);
         let rhs: &[u32; 8] = bytemuck::cast_ref(&other.0);
@@ -405,9 +405,9 @@ impl U256 {
         self.0 = result;
     }
 
-    #[cfg(not(all(target_os = "zkvm", target_arch = "riscv32")))]
     /// Multiply `self` by `other` (mod `modulo`) via the Montgomery
     /// multiplication method.
+    #[cfg(not(all(target_os = "zkvm", target_arch = "riscv32")))]
     pub fn mul(&mut self, other: &U256, modulo: &U256, inv: u128) {
         mul_reduce(&mut self.0, &other.0, &modulo.0, inv);
 
@@ -431,8 +431,8 @@ impl U256 {
         self.0[0] & 1 == 0
     }
 
-    #[cfg(all(target_os = "zkvm", target_arch = "riscv32"))]
     /// Turn `self` into its multiplicative inverse (mod `modulo`)
+    #[cfg(all(target_os = "zkvm", target_arch = "riscv32"))]
     pub fn invert(&mut self, modulo: &U256) {
         let inp: &[u32; 8] = bytemuck::cast_ref(&self.0);
         let prime: &[u32; 8] = bytemuck::cast_ref(&modulo.0);
@@ -442,8 +442,8 @@ impl U256 {
         self.0 = result;
     }
 
-    #[cfg(not(all(target_os = "zkvm", target_arch = "riscv32")))]
     /// Turn `self` into its multiplicative inverse (mod `modulo`)
+    #[cfg(not(all(target_os = "zkvm", target_arch = "riscv32")))]
     pub fn invert(&mut self, modulo: &U256) {
         // Guajardo Kumar Paar Pelzl
         // Efficient Software-Implementation of Finite Fields with Applications to Cryptography

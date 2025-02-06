@@ -410,8 +410,7 @@ macro_rules! field_impl {
     }
 }
 
-// #[cfg(not(all(target_os = "zkvm", target_arch = "riscv32")))]
-#[cfg(not(target_os = "zkvm"))]
+#[cfg(not(all(target_os = "zkvm", target_arch = "riscv32")))]
 field_impl!(
     Fr,
     [
@@ -441,8 +440,7 @@ field_impl!(
     0x6586864b4c6911b3c2e1f593efffffff
 );
 
-// #[cfg(not(all(target_os = "zkvm", target_arch = "riscv32")))]
-#[cfg(not(target_os = "zkvm"))]
+#[cfg(not(all(target_os = "zkvm", target_arch = "riscv32")))]
 field_impl!(
     Fq,
     [
@@ -472,8 +470,7 @@ field_impl!(
     0x9ede7d651eca6ac987d20782e4866389
 );
 
-// #[cfg(all(target_os = "zkvm", target_arch = "riscv32"))]
-#[cfg(target_os = "zkvm")]
+#[cfg(all(target_os = "zkvm", target_arch = "riscv32"))]
 field_impl!(
     Fr,
     [
@@ -519,8 +516,7 @@ field_impl!(
     ]
 );
 
-// #[cfg(all(target_os = "zkvm", target_arch = "riscv32"))]
-#[cfg(target_os = "zkvm")]
+#[cfg(all(target_os = "zkvm", target_arch = "riscv32"))]
 field_impl!(
     Fq,
     [
