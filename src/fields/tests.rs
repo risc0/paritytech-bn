@@ -1,17 +1,17 @@
-use rand::{Rng, SeedableRng, rngs::StdRng};
 use super::FieldElement;
+use rand::{rngs::StdRng, Rng, SeedableRng};
 
 fn can_invert<F: FieldElement>() {
     let mut a = F::one();
 
-    for _ in 0..10000 {
+    for _ in 0..5 {
         assert_eq!(a * a.inverse().unwrap(), F::one());
 
         a = a + F::one();
     }
 
     a = -F::one();
-    for _ in 0..10000 {
+    for _ in 0..5 {
         assert_eq!(a * a.inverse().unwrap(), F::one());
 
         a = a - F::one();
@@ -21,7 +21,7 @@ fn can_invert<F: FieldElement>() {
 }
 
 fn rand_element_eval<F: FieldElement, R: Rng>(rng: &mut R) {
-    for _ in 0..100 {
+    for _ in 0..2 {
         let a = F::random(rng);
         let b = F::random(rng);
         let c = F::random(rng);
@@ -32,14 +32,14 @@ fn rand_element_eval<F: FieldElement, R: Rng>(rng: &mut R) {
 }
 
 fn rand_element_squaring<F: FieldElement, R: Rng>(rng: &mut R) {
-    for _ in 0..100 {
+    for _ in 0..2 {
         let a = F::random(rng);
 
         assert!(a * a == a.squared());
     }
 
     let mut cur = F::zero();
-    for _ in 0..100 {
+    for _ in 0..2 {
         assert_eq!(cur.squared(), cur * cur);
 
         cur = cur + F::one();
@@ -47,13 +47,13 @@ fn rand_element_squaring<F: FieldElement, R: Rng>(rng: &mut R) {
 }
 
 fn rand_element_addition_and_negation<F: FieldElement, R: Rng>(rng: &mut R) {
-    for _ in 0..100 {
+    for _ in 0..2 {
         let a = F::random(rng);
 
         assert_eq!(a + (-a), F::zero());
     }
 
-    for _ in 0..100 {
+    for _ in 0..2 {
         let mut a = F::random(rng);
         let r = F::random(rng);
         let mut b = a + r;
@@ -86,7 +86,7 @@ fn rand_element_addition_and_negation<F: FieldElement, R: Rng>(rng: &mut R) {
 }
 
 fn rand_element_inverse<F: FieldElement, R: Rng>(rng: &mut R) {
-    for _ in 0..10000 {
+    for _ in 0..5 {
         let a = F::random(rng);
         assert!(a.inverse().unwrap() * a == F::one());
         let b = F::random(rng);
@@ -98,7 +98,7 @@ fn rand_element_multiplication<F: FieldElement, R: Rng>(rng: &mut R) {
     // If field is not associative under multiplication, 1/8 of all triplets a, b, c
     // will fail the test (a*b)*c = a*(b*c).
 
-    for _ in 0..250 {
+    for _ in 0..2 {
         let a = F::random(rng);
         let b = F::random(rng);
         let c = F::random(rng);

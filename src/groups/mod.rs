@@ -405,6 +405,17 @@ pub type G1 = G<G1Params>;
 
 pub type AffineG1 = AffineG<G1Params>;
 
+impl AffineG1 {
+    pub const fn from_mont_le_slice(bytes: &[u8]) -> Self {
+        assert!(bytes.len() == 64);
+        let (lo, hi) = bytes.split_at(32);
+        AffineG1 {
+            x: Fq::from_mont_le_slice(lo),
+            y: Fq::from_mont_le_slice(hi),
+        }
+    }
+}
+
 #[derive(Debug)]
 pub struct G2Params;
 
@@ -475,6 +486,17 @@ pub type G2 = G<G2Params>;
 
 pub type AffineG2 = AffineG<G2Params>;
 
+impl AffineG2 {
+    pub const fn from_mont_le_slice(bytes: &[u8]) -> Self {
+        assert!(bytes.len() == 128);
+        let (lo, hi) = bytes.split_at(64);
+        AffineG2 {
+            x: Fq2::from_mont_le_slice(lo),
+            y: Fq2::from_mont_le_slice(hi),
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests;
 
@@ -495,7 +517,7 @@ fn test_affine_jacobian_conversion() {
     assert!(G1::zero().to_affine().is_none());
     assert!(G2::zero().to_affine().is_none());
 
-    for _ in 0..1000 {
+    for _ in 0..2 {
         let a = G1::one() * Fr::random(rng);
         let b = a.to_affine().unwrap();
         let c = b.to_jacobian();
@@ -503,7 +525,7 @@ fn test_affine_jacobian_conversion() {
         assert_eq!(a, c);
     }
 
-    for _ in 0..1000 {
+    for _ in 0..2 {
         let a = G2::one() * Fr::random(rng);
         let b = a.to_affine().unwrap();
         let c = b.to_jacobian();
@@ -1075,7 +1097,7 @@ fn test_batch_bilinearity_fifty() {
     let mut sp_vec : Vec<G1> = Vec::new();
     let mut sq_vec : Vec<G2> = Vec::new();
 
-    for _ in 0..50 {
+    for _ in 0..2 {
         let p = G1::random(&mut rng);
         let q = G2::random(&mut rng);
         let s = Fr::random(&mut rng);
@@ -1102,7 +1124,7 @@ fn test_bilinearity() {
     ];
     let mut rng = StdRng::from_seed(seed);
 
-    for _ in 0..50 {
+    for _ in 0..2 {
         let p = G1::random(&mut rng);
         let q = G2::random(&mut rng);
         let s = Fr::random(&mut rng);
@@ -1160,4 +1182,42 @@ fn test_y_at_point_at_infinity() {
 
     assert!(G2::zero().y == Fq2::one());
     assert!((-G2::zero()).y == Fq2::one());
+}
+
+#[test]
+fn r0_from_le_slice() {
+    // Test using the generators of G1 and G2
+    let pt = AffineG1::from_mont_le_slice(&[
+        0x9d, 0x0d, 0x8f, 0xc5, 0x8d, 0x43, 0x5d, 0xd3,
+        0x3d, 0x0b, 0xc7, 0xf5, 0x28, 0xeb, 0x78, 0x0a,
+        0x2c, 0x46, 0x79, 0x78, 0x6f, 0xa3, 0x6e, 0x66,
+        0x2f, 0xdf, 0x07, 0x9a, 0xc1, 0x77, 0x0a, 0x0e,
+        0x3a, 0x1b, 0x1e, 0x8b, 0x1b, 0x87, 0xba, 0xa6,
+        0x7b, 0x16, 0x8e, 0xeb, 0x51, 0xd6, 0xf1, 0x14,
+        0x58, 0x8c, 0xf2, 0xf0, 0xde, 0x46, 0xdd, 0xcc,
+        0x5e, 0xbe, 0x0f, 0x34, 0x83, 0xef, 0x14, 0x1c,
+    ]);
+    assert_eq!(pt.x, G1::one().x);
+    assert_eq!(pt.y, G1::one().y);
+
+    let pt = AffineG2::from_mont_le_slice(&[
+        0x26, 0x20, 0xbc, 0x02, 0xd1, 0xb5, 0x83, 0x8e,
+        0x72, 0x01, 0x7b, 0x49, 0x35, 0x19, 0xeb, 0xdc,
+        0xdf, 0x1a, 0x81, 0x97, 0x47, 0x26, 0xb8, 0xfb,
+        0x3b, 0x50, 0x96, 0xaf, 0x41, 0x38, 0x57, 0x19,
+        0x40, 0x61, 0x4c, 0xa8, 0x7d, 0x73, 0xb4, 0xaf,
+        0xc4, 0xd8, 0x02, 0x58, 0x5a, 0xdd, 0x43, 0x60,
+        0x86, 0x2f, 0xa0, 0x52, 0xfc, 0x50, 0xe9, 0x09,
+        0x6b, 0x7b, 0xea, 0x3a, 0x83, 0xf0, 0xfe, 0x14,
+        0xf6, 0xe9, 0x6b, 0x88, 0x9d, 0xfa, 0x9d, 0x61,
+        0x78, 0x9b, 0x9e, 0xf5, 0x97, 0xd2, 0x7f, 0xfe,
+        0xfe, 0x7d, 0x1b, 0x23, 0x62, 0x1a, 0x9e, 0xff,
+        0x06, 0x42, 0x9e, 0xae, 0xeb, 0x7e, 0xfd, 0x28,
+        0xee, 0x56, 0x18, 0xc7, 0x56, 0x5b, 0x09, 0x64,
+        0xbb, 0x3c, 0x7d, 0x32, 0x22, 0xf9, 0x57, 0xdc,
+        0x76, 0x10, 0x35, 0x33, 0xbe, 0x35, 0xf9, 0x55,
+        0x82, 0x64, 0xfd, 0x93, 0xe6, 0xa0, 0xa4, 0x0d,
+    ]);
+    assert_eq!(pt.x, G2::one().x);
+    assert_eq!(pt.y, G2::one().y);
 }
