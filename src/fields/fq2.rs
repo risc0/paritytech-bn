@@ -162,10 +162,11 @@ impl Mul for Fq2 {
         let prime: [u32; 8] = bytemuck::cast(Fq::modulus().0);
         let prime_sqr: [u32; 16] = bytemuck::cast(Fq::modulus_squared().0);
 
-        let mut result_mut = [[0u32; 8]; 2];
+        let mut result = [0u128; 4];
+        let result_mut: &mut [u32; 16] = bytemuck::cast_mut(&mut result);
 
-        field::extfield_xxone_mul_256(&lhs, &rhs, &prime, &prime_sqr, &mut result_mut);
-        let result: &[[u128; 2]; 2] = bytemuck::cast_ref(&result_mut);
+        field::extfield_xxone_mul_flatout_256(&lhs, &rhs, &prime, &prime_sqr, result_mut);
+        let result: &[[u128; 2]; 2] = bytemuck::cast_ref(result_mut);
         Fq2 {
             c0: Fq::new(U256(result[0])).unwrap(),
             c1: Fq::new(U256(result[1])).unwrap(),
