@@ -165,13 +165,11 @@ impl Mul for Fq2 {
         // We construct our result using u32s but will eventually need to interpret it as u128s, so
         // we align to the u128 alignment (i.e. of 16 bytes)
         #[repr(align(16))]
-        struct AlignedU32s {
-            val: [[u32; 8]; 2]
-        }
-        let mut result_mut = AlignedU32s{ val: [[0u32; 8]; 2] };
+        struct AlignedU32s([[u32; 8]; 2]);
+        let mut result_mut = AlignedU32s([[0u32; 8]; 2]);
 
-        field::extfield_xxone_mul_256(&lhs, &rhs, &prime, &prime_sqr, &mut result_mut.val);
-        let result: &[[u128; 2]; 2] = bytemuck::cast_ref(&result_mut.val);
+        field::extfield_xxone_mul_256(&lhs, &rhs, &prime, &prime_sqr, &mut result_mut.0);
+        let result: &[[u128; 2]; 2] = bytemuck::cast_ref(&result_mut.0);
         Fq2 {
             c0: Fq::new(U256(result[0])).unwrap(),
             c1: Fq::new(U256(result[1])).unwrap(),
