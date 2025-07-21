@@ -1,12 +1,12 @@
 #![no_main]
 
-use bn254::{PrivateKey, PublicKey, Signature, ECDSA};
+use bn254::{PrivateKey, PublicKey, Signature, ECDSA as BLS};
 use risc0_zkvm::guest::env;
 use std::vec::Vec;
 
 risc0_zkvm::guest::entry!(main);
 
-const MSG: &[u8] = b"This is the message to be signed by BN-254 within RISC Zero ZKVM";
+const MSG: &[u8] = b"This message will be signed using BLS-BN254 within the RISC Zero ZKVM.";
 
 pub fn main() {
     let sk_be_bytes_vec: Vec<Vec<u8>> = env::read();
@@ -22,7 +22,7 @@ pub fn main() {
         let compressed = pk.to_compressed().unwrap();
         assert_eq!(pk.0, PublicKey::from_compressed(&compressed).unwrap().0);
 
-        let sig = ECDSA::sign(&MSG, &sk).unwrap();
+        let sig = BLS::sign(&MSG, &sk).unwrap();
         assert_eq!(
             sig.0,
             Signature::from_compressed(sig.to_compressed().unwrap())
@@ -30,7 +30,7 @@ pub fn main() {
                 .0
         );
 
-        ECDSA::verify(&MSG, &sig, &pk).unwrap();
+        BLS::verify(&MSG, &sig, &pk).unwrap();
         env::log("verification passed");
 
         pks.push(pk);
@@ -40,7 +40,7 @@ pub fn main() {
     let agg_pk = pks.into_iter().reduce(|a, b| a + b).unwrap();
     let agg_sig = sigs.into_iter().reduce(|a, b| a + b).unwrap();
 
-    ECDSA::verify(&MSG, &agg_sig, &agg_pk).unwrap();
+    BLS::verify(&MSG, &agg_sig, &agg_pk).unwrap();
     env::log("aggregated verification passed");
 
     env::commit(&agg_sig.to_compressed().unwrap());

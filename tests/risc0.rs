@@ -1,11 +1,11 @@
-use bn254::{PrivateKey, PublicKey, Signature, ECDSA};
-use guests::{ECDSA_ELF, ECDSA_ID};
+use bn254::{PrivateKey, PublicKey, Signature, ECDSA as BLS};
+use guests::{BLS_ELF, BLS_ID};
 use rand::{rngs::StdRng, SeedableRng};
 use risc0_zkvm::{default_prover, ExecutorEnv};
 use test_log::test;
 use tracing_subscriber::fmt::writer::TestWriter;
 
-const MSG: &[u8] = b"This is the message to be signed by BN-254 within RISC Zero ZKVM";
+const MSG: &[u8] = b"This message will be signed using BLS-BN254 within the RISC Zero ZKVM.";
 
 fn bls(seed: u64, n: usize) -> Result<(), Box<dyn std::error::Error>> {
     let mut rng = StdRng::seed_from_u64(seed);
@@ -26,10 +26,10 @@ fn bls(seed: u64, n: usize) -> Result<(), Box<dyn std::error::Error>> {
     let prover = default_prover();
 
     println!("Generating proof ({})...", prover.get_name());
-    let prove_info = prover.prove(env, ECDSA_ELF)?;
+    let prove_info = prover.prove(env, BLS_ELF)?;
 
     println!("Verifying proof...");
-    prove_info.receipt.verify(ECDSA_ID)?;
+    prove_info.receipt.verify(BLS_ID)?;
 
     println!("Validating Journal...");
     let journal = &prove_info.receipt.journal;
@@ -41,7 +41,7 @@ fn bls(seed: u64, n: usize) -> Result<(), Box<dyn std::error::Error>> {
         .reduce(|a, b| a + b)
         .unwrap();
 
-    ECDSA::verify(&MSG, &agg_sig, &agg_pk).unwrap();
+    BLS::verify(&MSG, &agg_sig, &agg_pk).unwrap();
 
     Ok(())
 }
