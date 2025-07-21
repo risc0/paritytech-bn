@@ -33,4 +33,4 @@ jobs:
         run: rzup install --verbose
         shell: bash
       - name: cargo test
-        run: cargo test r0vm -F cuda
+        run: cargo test --release -F cuda r0vm

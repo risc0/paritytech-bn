@@ -22,4 +22,4 @@ jobs:
       - name: install rust
         uses: risc0/risc0/.github/actions/rustup@352dea62857ba57331053cd0986a12c1a4708732
       - name: run tests
-        run: cargo test -F risc0
+        run: cargo test --release -F risc0
