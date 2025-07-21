@@ -1,0 +1,25 @@
+name: main
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+env:
+  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  RUST_BACKTRACE: "1"
+
+jobs:
+  test:
+    runs-on: [ self-hosted, prod, Linux, cpu ]
+    steps:
+      - uses: actions/checkout@v4
+      - name: install rust
+        uses: risc0/risc0/.github/actions/rustup@352dea62857ba57331053cd0986a12c1a4708732
+      - name: run tests
+        run: cargo test -F risc0
