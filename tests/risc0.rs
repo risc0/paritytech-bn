@@ -1,14 +1,14 @@
 use bn254::{PrivateKey, PublicKey, Signature, ECDSA};
 use guests::{ECDSA_ELF, ECDSA_ID};
-use rand_chacha::{rand_core::SeedableRng, ChaCha20Rng};
+use rand::{rngs::StdRng, SeedableRng};
 use risc0_zkvm::{default_prover, ExecutorEnv};
 use test_log::test;
 use tracing_subscriber::fmt::writer::TestWriter;
 
 const MSG: &[u8] = b"This is the message to be signed by BN-254 within RISC Zero ZKVM";
 
-fn bls(seed: [u8; 32], n: usize) -> Result<(), Box<dyn std::error::Error>> {
-    let mut rng = ChaCha20Rng::from_seed(seed);
+fn bls(seed: u64, n: usize) -> Result<(), Box<dyn std::error::Error>> {
+    let mut rng = StdRng::seed_from_u64(seed);
 
     let sks = (0..n)
         .map(|_| PrivateKey::random(&mut rng))
@@ -49,5 +49,5 @@ fn bls(seed: [u8; 32], n: usize) -> Result<(), Box<dyn std::error::Error>> {
 #[test]
 #[cfg_attr(not(feature = "cuda"), ignore = "proving takes a long time")]
 fn r0vm_prove_ecdsa_signatures() -> Result<(), Box<dyn std::error::Error>> {
-    bls([0u8; 32], 3)
+    bls(42, 3)
 }
