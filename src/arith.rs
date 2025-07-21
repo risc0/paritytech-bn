@@ -1,7 +1,7 @@
 use bytemuck::{Pod, Zeroable};
 use core::cmp::Ordering;
-use rand::Rng;
 use crunchy::unroll;
+use rand::Rng;
 
 use byteorder::{BigEndian, ByteOrder};
 
@@ -630,7 +630,7 @@ pub(crate) mod risc0 {
 
     use crypto_bigint::{NonZero, U256};
 
-    fn u256(a: &[u32; 8]) -> U256 {
+    fn load(a: &[u32; 8]) -> U256 {
         U256::from_words(*bytemuck::cast_ref(a))
     }
 
@@ -639,33 +639,33 @@ pub(crate) mod risc0 {
     }
 
     pub fn modadd_256(a: &[u32; 8], b: &[u32; 8], p: &[u32; 8], r: &mut [u32; 8]) {
-        let out = u256(a).add_mod(&u256(b), &u256(p));
+        let out = load(a).add_mod(&load(b), &load(p));
         store(out, r);
     }
 
     pub fn modsub_256(a: &[u32; 8], b: &[u32; 8], p: &[u32; 8], r: &mut [u32; 8]) {
-        let out = u256(a).sub_mod(&u256(b), &u256(p));
+        let out = load(a).sub_mod(&load(b), &load(p));
         store(out, r);
     }
 
     pub fn modmul_256(a: &[u32; 8], b: &[u32; 8], p: &[u32; 8], r: &mut [u32; 8]) {
-        let out = u256(a).mul_mod(&u256(b), &NonZero::new(u256(p)).unwrap());
+        let out = load(a).mul_mod(&load(b), &NonZero::new(load(p)).unwrap());
         store(out, r);
     }
 
     pub fn modinv_256(a: &[u32; 8], p: &[u32; 8], r: &mut [u32; 8]) {
-        let p = NonZero::new(u256(p)).unwrap();
-        let out = u256(a).inv_mod(&p).unwrap();
+        let out = load(a).inv_mod(&load(p)).unwrap();
         store(out, r);
     }
 
     pub mod unchecked {
         use super::*;
         use core::ops::Add;
+        use crypto_bigint::U512;
 
         pub fn modmul_256(a: &[u32; 8], b: &[u32; 8], p: &[u32; 8], r: &mut [u32; 8]) {
-            let p = NonZero::new(u256(p)).unwrap();
-            let out = u256(a).mul_mod(&u256(b), &p).add(p.as_ref());
+            let p = NonZero::new(load(p)).unwrap();
+            let out = load(a).mul_mod(&load(b), &p).add(p.as_ref());
             store(out, r);
         }
 
@@ -673,24 +673,24 @@ pub(crate) mod risc0 {
             a: &[[u32; 8]; 2],
             b: &[[u32; 8]; 2],
             p: &[u32; 8],
-            _: &[u32; 16],
+            pp: &[u32; 16],
             r: &mut [[u32; 8]; 2],
         ) {
-            let a0 = u256(&a[0]);
-            let a1 = u256(&a[1]);
-            let b0 = u256(&b[0]);
-            let b1 = u256(&b[1]);
-            let p = NonZero::new(u256(p)).unwrap();
+            let (a0, a1, b0, b1) = (load(&a[0]), load(&a[1]), load(&b[0]), load(&b[1]));
+            let p = NonZero::new(load(p)).unwrap();
+
+            // we don't use the squared modules, so just check that it is correct
+            assert_eq!(
+                p.widening_square(),
+                U512::from_words(*bytemuck::cast_ref(pp))
+            );
 
             let out0 = a0.mul_mod(&b0, &p).sub_mod(&a1.mul_mod(&b1, &p), &p);
             let out1 = a1.mul_mod(&b0, &p).add_mod(&a0.mul_mod(&b1, &p), &p);
 
             // perturb the output, because we are doing unchecked
-            let out0 = out0.add(p.as_ref());
-            let out1 = out1.add(p.as_ref());
-
-            store(out0, &mut r[0]);
-            store(out1, &mut r[1]);
+            store(out0.add(p.as_ref()), &mut r[0]);
+            store(out1.add(p.as_ref()), &mut r[1]);
         }
     }
 }
