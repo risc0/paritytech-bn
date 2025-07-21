@@ -12,14 +12,15 @@ concurrency:
 
 env:
   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-  RUST_BACKTRACE: "1"
 
 jobs:
   test:
     runs-on: [ self-hosted, prod, Linux, cpu ]
+    env:
+      RUST_BACKTRACE: full
+      RISC0_SKIP_BUILD: 1
     steps:
       - uses: actions/checkout@v4
-      - name: install rust
-        uses: risc0/risc0/.github/actions/rustup@352dea62857ba57331053cd0986a12c1a4708732
+      - uses: risc0/risc0/.github/actions/rustup@352dea62857ba57331053cd0986a12c1a4708732
       - name: run tests
         run: cargo test --release -F risc0

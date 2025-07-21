@@ -17,8 +17,8 @@ jobs:
   r0vm-tests:
     runs-on: [ self-hosted, prod, Linux, gpu ]
     env:
-      RUST_LOG: info
       RUST_BACKTRACE: full
+      RUST_LOG: info
       RISC0_INFO: true
     steps:
       - uses: actions/checkout@v4
