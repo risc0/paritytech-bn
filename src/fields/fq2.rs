@@ -1,7 +1,13 @@
+use bytemuck::{Pod, Zeroable};
 use core::ops::{Add, Mul, Neg, Sub};
 use rand::Rng;
 use crate::fields::{const_fq, FieldElement, Fq};
 use crate::arith::{U256, U512};
+
+#[cfg(all(not(target_r0vm), feature = "risc0"))]
+use crate::arith::risc0;
+#[cfg(target_r0vm)]
+use risc0_bigint2::field as risc0;
 
 #[inline]
 fn fq_non_residue() -> Fq {
@@ -33,7 +39,7 @@ pub fn fq2_nonresidue() -> Fq2 {
     )
 }
 
-#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Pod, Zeroable)]
 #[repr(C)]
 pub struct Fq2 {
     c0: Fq,
@@ -102,6 +108,13 @@ impl FieldElement for Fq2 {
         self.c0.is_zero() && self.c1.is_zero()
     }
 
+    #[cfg(any(target_r0vm, feature = "risc0"))]
+    #[inline]
+    fn squared(&self) -> Self {
+        self.mul(*self)
+    }
+
+    #[cfg(not(any(target_r0vm, feature = "risc0")))]
     fn squared(&self) -> Self {
         // Devegili OhEig Scott Dahab
         //     Multiplication and Squaring on Pairing-Friendly Fields.pdf
@@ -110,7 +123,8 @@ impl FieldElement for Fq2 {
         let ab = self.c0 * self.c1;
 
         Fq2 {
-            c0: (self.c1 * fq_non_residue() + self.c0) * (self.c0 + self.c1) - ab
+            c0: (self.c1 * fq_non_residue() + self.c0) * (self.c0 + self.c1)
+                - ab
                 - ab * fq_non_residue(),
             c1: ab + ab,
         }
@@ -133,6 +147,24 @@ impl FieldElement for Fq2 {
 impl Mul for Fq2 {
     type Output = Fq2;
 
+    #[cfg(any(target_r0vm, feature = "risc0"))]
+    fn mul(self, other: Fq2) -> Fq2 {
+        let lhs = bytemuck::cast_ref(&self);
+        let rhs = bytemuck::cast_ref(&other);
+
+        let p = bytemuck::cast_ref(&Fq::MODULUS);
+        let p_sqr = bytemuck::cast_ref(&Fq::MODULUS_SQUARED);
+
+        let mut result = [[0u32; 8]; 2];
+        risc0::unchecked::extfield_xxone_mul_256(lhs, rhs, p, p_sqr, &mut result);
+
+        Fq2 {
+            c0: bytemuck::cast::<_, Fq>(result[0]).reduce_mont(),
+            c1: bytemuck::cast::<_, Fq>(result[1]).reduce_mont(),
+        }
+    }
+
+    #[cfg(not(any(target_r0vm, feature = "risc0")))]
     fn mul(self, other: Fq2) -> Fq2 {
         // Devegili OhEig Scott Dahab
         //     Multiplication and Squaring on Pairing-Friendly Fields.pdf
@@ -231,7 +263,6 @@ impl Fq2 {
     }
 }
 
-
 #[test]
 fn sqrt_fq2() {
     // from zcash test_proof.cpp
@@ -248,13 +279,12 @@ fn sqrt_fq2() {
     assert_eq!(x2.sqrt().unwrap(), x1);
 
     // i is sqrt(-1)
-    assert_eq!(
-        Fq2::one().neg().sqrt().unwrap(),
-        Fq2::i(),
-    );
+    assert_eq!(Fq2::one().neg().sqrt().unwrap(), Fq2::i(),);
 
     // no sqrt for (1 + 2i)
     assert!(
-        Fq2::new(Fq::from_str("1").unwrap(), Fq::from_str("2").unwrap()).sqrt().is_none()
+        Fq2::new(Fq::from_str("1").unwrap(), Fq::from_str("2").unwrap())
+            .sqrt()
+            .is_none()
     );
 }

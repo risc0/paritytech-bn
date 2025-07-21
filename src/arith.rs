@@ -1,12 +1,16 @@
+use bytemuck::{Pod, Zeroable};
 use core::cmp::Ordering;
-use rand::Rng;
 use crunchy::unroll;
+use rand::Rng;
 
 use byteorder::{BigEndian, ByteOrder};
 
+#[cfg(target_r0vm)]
+use risc0_bigint2::field as risc0;
+
 /// 256-bit, stack allocated biginteger for use in prime field
 /// arithmetic.
-#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Pod, Zeroable)]
 #[repr(C)]
 pub struct U256(pub [u128; 2]);
 
@@ -27,7 +31,7 @@ impl From<u64> for U256 {
 
 /// 512-bit, stack allocated biginteger for use in extension
 /// field serialization and scalar interpretation.
-#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Pod, Zeroable)]
 #[repr(C)]
 pub struct U512(pub [u128; 4]);
 
@@ -79,7 +83,7 @@ impl U512 {
         U512(res)
     }
 
-     pub fn from_slice(s: &[u8]) -> Result<U512, Error> {
+    pub fn from_slice(s: &[u8]) -> Result<U512, Error> {
         if s.len() != 64 {
             return Err(Error::InvalidLength {
                 expected: 32,
@@ -278,6 +282,7 @@ impl U256 {
     }
 
     /// Add `other` to `self` (mod `modulo`)
+    #[cfg(not(any(target_r0vm, feature = "risc0")))]
     pub fn add(&mut self, other: &U256, modulo: &U256) {
         add_nocarry(&mut self.0, &other.0);
 
@@ -286,7 +291,21 @@ impl U256 {
         }
     }
 
+    #[cfg(any(target_r0vm, feature = "risc0"))]
+    #[inline]
+    pub fn add(&mut self, other: &U256, modulo: &U256) {
+        unsafe {
+            risc0::modadd_256(
+                &*(self as *const U256 as *const [u32; 8]),
+                &*(other as *const U256 as *const [u32; 8]),
+                &*(modulo as *const U256 as *const [u32; 8]),
+                &mut *(self as *mut U256 as *mut [u32; 8]),
+            );
+        }
+    }
+
     /// Subtract `other` from `self` (mod `modulo`)
+    #[cfg(not(any(target_r0vm, feature = "risc0")))]
     pub fn sub(&mut self, other: &U256, modulo: &U256) {
         if *self < *other {
             add_nocarry(&mut self.0, &modulo.0);
@@ -295,13 +314,49 @@ impl U256 {
         sub_noborrow(&mut self.0, &other.0);
     }
 
+    #[cfg(any(target_r0vm, feature = "risc0"))]
+    #[inline]
+    pub fn sub(&mut self, other: &U256, modulo: &U256) {
+        unsafe {
+            risc0::modsub_256(
+                &*(self as *const U256 as *const [u32; 8]),
+                &*(other as *const U256 as *const [u32; 8]),
+                &*(modulo as *const U256 as *const [u32; 8]),
+                &mut *(self as *mut U256 as *mut [u32; 8]),
+            );
+        }
+    }
+
     /// Multiply `self` by `other` (mod `modulo`) via the Montgomery
     /// multiplication method.
-    pub fn mul(&mut self, other: &U256, modulo: &U256, inv: u128) {
+    #[cfg(not(any(target_r0vm, feature = "risc0")))]
+    pub fn mul_mont(&mut self, other: &U256, modulo: &U256, inv: u128) {
         mul_reduce(&mut self.0, &other.0, &modulo.0, inv);
 
         if *self >= *modulo {
             sub_noborrow(&mut self.0, &modulo.0);
+        }
+    }
+
+    #[cfg(any(target_r0vm, feature = "risc0"))]
+    #[inline]
+    pub fn mul_mont(&mut self, other: &U256, modulo: &U256, r_inv: &U256) {
+        let p = modulo.as_words();
+        let mut tmp = [0u32; 8];
+        risc0::unchecked::modmul_256(self.as_words(), other.as_words(), p, &mut tmp);
+        risc0::modmul_256(&tmp, r_inv.as_words(), p, bytemuck::cast_mut(&mut self.0));
+    }
+
+    #[cfg(any(target_r0vm, feature = "risc0"))]
+    #[inline]
+    pub fn mul(&mut self, other: &U256, modulo: &U256) {
+        unsafe {
+            risc0::modmul_256(
+                &*(self as *const U256 as *const [u32; 8]),
+                &*(other as *const U256 as *const [u32; 8]),
+                &*(modulo as *const U256 as *const [u32; 8]),
+                &mut *(self as *mut U256 as *mut [u32; 8]),
+            );
         }
     }
 
@@ -321,6 +376,7 @@ impl U256 {
     }
 
     /// Turn `self` into its multiplicative inverse (mod `modulo`)
+    #[cfg(not(any(target_r0vm, feature = "risc0")))]
     pub fn invert(&mut self, modulo: &U256) {
         // Guajardo Kumar Paar Pelzl
         // Efficient Software-Implementation of Finite Fields with Applications to Cryptography
@@ -369,10 +425,31 @@ impl U256 {
         }
     }
 
+    #[cfg(any(target_r0vm, feature = "risc0"))]
+    #[inline]
+    pub fn invert(&mut self, modulo: &U256) {
+        let mut result = [0u32; 8];
+        risc0::modinv_256(self.as_words(), modulo.as_words(), &mut result);
+
+        *self = Self::from_words(result);
+    }
+
     /// Return an Iterator<Item=bool> over all bits from
     /// MSB to LSB.
     pub fn bits(&self) -> BitIterator {
         BitIterator { int: &self, n: 256 }
+    }
+
+    #[cfg(any(target_r0vm, feature = "risc0"))]
+    #[inline(always)]
+    fn as_words(&self) -> &[u32; 8] {
+        bytemuck::cast_ref(&self.0)
+    }
+
+    #[cfg(any(target_r0vm, feature = "risc0"))]
+    #[inline(always)]
+    fn from_words(words: [u32; 8]) -> Self {
+        Self(bytemuck::cast(words))
     }
 }
 
@@ -396,6 +473,7 @@ impl<'a> Iterator for BitIterator<'a> {
 }
 
 /// Divide by two
+#[cfg(not(any(target_r0vm, feature = "risc0")))]
 #[inline]
 fn div2(a: &mut [u128; 2]) {
     let tmp = a[1] << 127;
@@ -434,6 +512,7 @@ fn adc(a: u128, b: u128, carry: &mut u128) -> u128 {
     combine_u128(r1, r0)
 }
 
+#[cfg(not(any(target_r0vm, feature = "risc0")))]
 #[inline]
 fn add_nocarry(a: &mut [u128; 2], b: &[u128; 2]) {
     let mut carry = 0;
@@ -521,6 +600,7 @@ fn mac_digit(from_index: usize, acc: &mut [u128; 4], b: &[u128; 2], c: u128) {
     debug_assert!(carry == 0);
 }
 
+#[cfg(not(any(target_r0vm, feature = "risc0")))]
 #[inline]
 fn mul_reduce(this: &mut [u128; 2], by: &[u128; 2], modulus: &[u128; 2], inv: u128) {
     // The Montgomery reduction here is based on Algorithm 14.32 in
@@ -542,6 +622,77 @@ fn mul_reduce(this: &mut [u128; 2], by: &[u128; 2], modulus: &[u128; 2], inv: u1
     }
 
     this.copy_from_slice(&res[2..]);
+}
+
+#[cfg(all(not(target_r0vm), feature = "risc0"))]
+pub(crate) mod risc0 {
+    //! Mock the RISC ZERO big-integer methods.
+
+    use crypto_bigint::{NonZero, U256};
+
+    fn load(a: &[u32; 8]) -> U256 {
+        U256::from_words(*bytemuck::cast_ref(a))
+    }
+
+    fn store(x: U256, dst: &mut [u32; 8]) {
+        *dst = *bytemuck::cast_ref(x.as_words());
+    }
+
+    pub fn modadd_256(a: &[u32; 8], b: &[u32; 8], p: &[u32; 8], r: &mut [u32; 8]) {
+        let out = load(a).add_mod(&load(b), &load(p));
+        store(out, r);
+    }
+
+    pub fn modsub_256(a: &[u32; 8], b: &[u32; 8], p: &[u32; 8], r: &mut [u32; 8]) {
+        let out = load(a).sub_mod(&load(b), &load(p));
+        store(out, r);
+    }
+
+    pub fn modmul_256(a: &[u32; 8], b: &[u32; 8], p: &[u32; 8], r: &mut [u32; 8]) {
+        let out = load(a).mul_mod(&load(b), &NonZero::new(load(p)).unwrap());
+        store(out, r);
+    }
+
+    pub fn modinv_256(a: &[u32; 8], p: &[u32; 8], r: &mut [u32; 8]) {
+        let out = load(a).inv_mod(&load(p)).unwrap();
+        store(out, r);
+    }
+
+    pub mod unchecked {
+        use super::*;
+        use core::ops::Add;
+        use crypto_bigint::U512;
+
+        pub fn modmul_256(a: &[u32; 8], b: &[u32; 8], p: &[u32; 8], r: &mut [u32; 8]) {
+            let p = NonZero::new(load(p)).unwrap();
+            let out = load(a).mul_mod(&load(b), &p).add(p.as_ref());
+            store(out, r);
+        }
+
+        pub fn extfield_xxone_mul_256(
+            a: &[[u32; 8]; 2],
+            b: &[[u32; 8]; 2],
+            p: &[u32; 8],
+            pp: &[u32; 16],
+            r: &mut [[u32; 8]; 2],
+        ) {
+            let (a0, a1, b0, b1) = (load(&a[0]), load(&a[1]), load(&b[0]), load(&b[1]));
+            let p = NonZero::new(load(p)).unwrap();
+
+            // we don't use the squared modules, so just check that it is correct
+            assert_eq!(
+                p.widening_square(),
+                U512::from_words(*bytemuck::cast_ref(pp))
+            );
+
+            let out0 = a0.mul_mod(&b0, &p).sub_mod(&a1.mul_mod(&b1, &p), &p);
+            let out1 = a1.mul_mod(&b0, &p).add_mod(&a0.mul_mod(&b1, &p), &p);
+
+            // perturb the output, because we are doing unchecked
+            store(out0.add(p.as_ref()), &mut r[0]);
+            store(out1.add(p.as_ref()), &mut r[1]);
+        }
+    }
 }
 
 #[test]

@@ -3,7 +3,7 @@ name = "substrate-bn"
 version = "0.6.0"
 authors = ["Sean Bowe <ewillbefull@gmail.com>", "Parity Technologies <admin@parity.io>"]
 description = "Pairing cryptography with the Barreto-Naehrig curve"
-keywords = ["pairing","crypto","cryptography"]
+keywords = ["pairing", "crypto", "cryptography"]
 readme = "README.md"
 homepage = "https://github.com/paritytech/bn"
 repository = "https://github.com/paritytech/bn"
@@ -12,17 +12,30 @@ edition = "2018"
 
 [features]
 default = []
+# Mock the R0VM precompiles on the host
+risc0 = ["dep:crypto-bigint"]
+# Run the R0VM tests on NVIDIA GPUs using the CUDA
+cuda = ["risc0-zkvm/cuda"]
 
 [[bench]]
 name = "api"
 
 [dependencies]
-rand = { version = "0.8.3", default-features = false }
+bytemuck = { version = "1" }
 byteorder = { version = "1.0", features = ["i128"], default-features = false }
 crunchy = "0.2.1"
+crypto-bigint = { version = "0.6", optional = true }
 lazy_static = { version = "1.4.0", features = ["spin_no_std"] }
+rand = { version = "0.8.3", default-features = false }
 rustc-hex = { version = "2", default-features = false }
 
-[dev-dependencies]
-rand = { version = "0.8.3", features = ["std_rng"] }
+[target.'cfg(all(target_os = "zkvm", target_vendor = "risc0"))'.dependencies]
+risc0-bigint2 = { version = "1.4.0", features = ["unstable"] }
 
+[dev-dependencies]
+bn254 = "0.0.1"
+guests = { path = "tests/guests" }
+rand = { version = "0.8.3", features = ["std_rng"] }
+risc0-zkvm = { version = "2.0" }
+test-log = { version = "0.2", features = ["trace"] }
+tracing-subscriber = { version = "0.3" }

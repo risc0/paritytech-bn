@@ -1,25 +1,28 @@
 use alloc::vec::Vec;
 use core::ops::{Add, Mul, Neg, Sub};
+use bytemuck::{Zeroable, Pod};
 use rand::Rng;
 use crate::fields::FieldElement;
 use crate::arith::{U256, U512};
 
 macro_rules! field_impl {
-    ($name:ident, $modulus:expr, $rsquared:expr, $rcubed:expr, $one:expr, $inv:expr) => {
-        #[derive(Copy, Clone, PartialEq, Eq, Debug)]
+    ($name:ident, $modulus:expr, $modulussquared:expr, $rsquared:expr, $rcubed:expr, $r:expr, $inv:expr, $rinv:expr) => {
+        #[derive(Copy, Clone, PartialEq, Eq, Debug, Pod, Zeroable)]
         #[repr(C)]
         pub struct $name(U256);
 
         impl From<$name> for U256 {
             #[inline]
-            fn from(mut a: $name) -> Self {
-                a.0.mul(&U256::one(), &U256::from($modulus), $inv);
-
-                a.0
+            fn from(a: $name) -> Self {
+                // convert to canonical form
+                a.reduce_mont().0
             }
         }
 
         impl $name {
+            pub const MODULUS: U256 = U256($modulus);
+            pub const MODULUS_SQUARED: U512 = U512($modulussquared);
+
             pub fn from_str(s: &str) -> Option<Self> {
                 let ints: Vec<_> = {
                     let mut acc = Self::zero();
@@ -43,11 +46,9 @@ macro_rules! field_impl {
             }
 
             /// Converts a U256 to an Fp so long as it's below the modulus.
-            pub fn new(mut a: U256) -> Option<Self> {
-                if a < U256::from($modulus) {
-                    a.mul(&U256::from($rsquared), &U256::from($modulus), $inv);
-
-                    Some($name(a))
+            pub fn new(a: U256) -> Option<Self> {
+                if a < U256($modulus) {
+                    Some(Self::new_mul_factor(a))
                 } else {
                     None
                 }
@@ -55,25 +56,38 @@ macro_rules! field_impl {
 
             /// Converts a U256 to an Fr regardless of modulus.
             pub fn new_mul_factor(mut a: U256) -> Self {
-                a.mul(&U256::from($rsquared), &U256::from($modulus), $inv);
-                $name(a)
+                #[cfg(not(any(target_r0vm, feature = "risc0")))]
+                {
+                    // Montgomery multiplication by R² converts an integer to Montgomery form
+                    a.mul_mont(&U256($rsquared), &U256($modulus), $inv);
+                }
+
+                #[cfg(any(target_r0vm, feature = "risc0"))]
+                {
+                    // R0VM fast-path: plain modular multiply by R
+                    a.mul(&U256($r), &U256($modulus));
+                }
+
+                Self(a)
+            }
+
+            #[inline]
+            pub fn reduce_mont(mut self) -> Self {
+                #[cfg(not(any(target_r0vm, feature = "risc0")))]
+                {
+                    self.0.mul_mont(&U256($r), &U256($modulus), $inv);
+                }
+
+                #[cfg(any(target_r0vm, feature = "risc0"))]
+                {
+                    self.0.mul(&U256($rinv), &U256($modulus));
+                }
+
+                self
             }
 
             pub fn interpret(buf: &[u8; 64]) -> Self {
-                $name::new(U512::interpret(buf).divrem(&U256::from($modulus)).1).unwrap()
-            }
-
-            /// Returns the modulus
-            #[inline]
-            #[allow(dead_code)]
-            pub fn modulus() -> U256 {
-                U256::from($modulus)
-            }
-
-            #[inline]
-            #[allow(dead_code)]
-            pub fn inv(&self) -> u128 {
-                $inv
+                $name::new(U512::interpret(buf).divrem(&U256($modulus)).1).unwrap()
             }
 
             pub fn raw(&self) -> &U256 {
@@ -88,16 +102,16 @@ macro_rules! field_impl {
         impl FieldElement for $name {
             #[inline]
             fn zero() -> Self {
-                $name(U256::from([0, 0, 0, 0]))
+                $name(U256([0, 0]))
             }
 
             #[inline]
             fn one() -> Self {
-                $name(U256::from($one))
+                $name(U256($r))
             }
 
             fn random<R: Rng>(rng: &mut R) -> Self {
-                $name(U256::random(rng, &U256::from($modulus)))
+                $name(U256::random(rng, &U256($modulus)))
             }
 
             #[inline]
@@ -107,13 +121,25 @@ macro_rules! field_impl {
 
             fn inverse(mut self) -> Option<Self> {
                 if self.is_zero() {
-                    None
-                } else {
-                    self.0.invert(&U256::from($modulus));
-                    self.0.mul(&U256::from($rcubed), &U256::from($modulus), $inv);
-
-                    Some(self)
+                    return None;
                 }
+
+                // (xR)^-1 = x^-1 R^-1, thus we need to multiply by R² for correct Montgomery form
+                self.0.invert(&U256($modulus));
+
+                #[cfg(not(any(target_r0vm, feature = "risc0")))]
+                {
+                    // Montgomery multiplication by R³ effectively multiplies the integer by R²
+                    self.0.mul_mont(&U256($rcubed), &U256($modulus), $inv);
+                }
+
+                #[cfg(any(target_r0vm, feature = "risc0"))]
+                {
+                    // R0VM fast-path: plain modular multiply by R²
+                    self.0.mul(&U256($rsquared), &U256($modulus));
+                }
+
+                Some(self)
             }
         }
 
@@ -122,7 +148,7 @@ macro_rules! field_impl {
 
             #[inline]
             fn add(mut self, other: $name) -> $name {
-                self.0.add(&other.0, &U256::from($modulus));
+                self.0.add(&other.0, &U256($modulus));
 
                 self
             }
@@ -133,7 +159,7 @@ macro_rules! field_impl {
 
             #[inline]
             fn sub(mut self, other: $name) -> $name {
-                self.0.sub(&other.0, &U256::from($modulus));
+                self.0.sub(&other.0, &U256($modulus));
 
                 self
             }
@@ -144,7 +170,15 @@ macro_rules! field_impl {
 
             #[inline]
             fn mul(mut self, other: $name) -> $name {
-                self.0.mul(&other.0, &U256::from($modulus), $inv);
+                #[cfg(not(any(target_r0vm, feature = "risc0")))]
+                {
+                    self.0.mul_mont(&other.0, &U256($modulus), $inv);
+                }
+
+                #[cfg(any(target_r0vm, feature = "risc0"))]
+                {
+                    self.0.mul_mont(&other.0, &U256($modulus), &U256($rinv));
+                }
 
                 self
             }
@@ -155,7 +189,7 @@ macro_rules! field_impl {
 
             #[inline]
             fn neg(mut self) -> $name {
-                self.0.neg(&U256::from($modulus));
+                self.0.neg(&U256($modulus));
 
                 self
             }
@@ -166,59 +200,63 @@ macro_rules! field_impl {
 field_impl!(
     Fr,
     [
-        0x43e1f593f0000001,
-        0x2833e84879b97091,
-        0xb85045b68181585d,
-        0x30644e72e131a029
+        0x2833e84879b9709143e1f593f0000001,
+        0x30644e72e131a029b85045b68181585d,
+    ],
+        [
+        0xC7F26223DCB3400008C3EB27E0000001,
+        0xA6CE1975E821DDB0FFE9A62C68C9BB7F,
+        0x85F73BB0D379D3DF2C77527B47B62FE7,
+        0x0925C4B8763CBF9C599A6F7C0348D21C,
     ],
     [
-        0x1bb8e645ae216da7,
-        0x53fe3ab1e35c59e3,
-        0x8c49833d53bb8085,
-        0x0216d0b17f4e44a5
+        0x53fe3ab1e35c59e31bb8e645ae216da7,
+        0x0216d0b17f4e44a58c49833d53bb8085,
     ],
     [
-        0x5e94d8e1b4bf0040,
-        0x2a489cbe1cfbb6b8,
-        0x893cc664a19fcfed,
-        0x0cf8594b7fcc657c
+        0x2a489cbe1cfbb6b85e94d8e1b4bf0040,
+        0x0cf8594b7fcc657c893cc664a19fcfed,
     ],
     [
-        0xac96341c4ffffffb,
-        0x36fc76959f60cd29,
-        0x666ea36f7879462e,
-        0xe0a77c19a07df2f
+        0x36fc76959f60cd29ac96341c4ffffffb,
+        0xe0a77c19a07df2f666ea36f7879462e,
     ],
-    0x6586864b4c6911b3c2e1f593efffffff
+    0x6586864b4c6911b3c2e1f593efffffff,
+    [
+        0x90ef5a9e111ec87dc5ba0056db1194e,
+        0x15ebf95182c5551cc8260de4aeb85d5d,
+    ]
 );
 
 field_impl!(
     Fq,
     [
-        0x3c208c16d87cfd47,
-        0x97816a916871ca8d,
-        0xb85045b68181585d,
-        0x30644e72e131a029
+        0x97816a916871ca8d3c208c16d87cfd47,
+        0x30644e72e131a029b85045b68181585d,
     ],
     [
-        0xf32cfc5b538afa89,
-        0xb5e71911d44501fb,
-        0x47ab1eff0a417ff6,
-        0x06d89f71cab8351f
+        0xA602072D09EAC1013B5458A2275D69B1,
+        0x04689E957A1242C84A50189C6D96CADC,
+        0xB00B85511637560626EDFA5C34C6B38D,
+        0x0925C4B8763CBF9C599A6F7C0348D21C,
     ],
     [
-        0xb1cd6dafda1530df,
-        0x62f210e6a7283db6,
-        0xef7f0b0c0ada0afb,
-        0x20fd6e902d592544
+        0xb5e71911d44501fbf32cfc5b538afa89,
+        0x06d89f71cab8351f47ab1eff0a417ff6,
     ],
     [
-        0xd35d438dc58f0d9d,
-        0xa78eb28f5c70b3d,
-        0x666ea36f7879462c,
-        0xe0a77c19a07df2f
+        0x62f210e6a7283db6b1cd6dafda1530df,
+        0x20fd6e902d592544ef7f0b0c0ada0afb,
     ],
-    0x9ede7d651eca6ac987d20782e4866389
+    [
+        0xa78eb28f5c70b3dd35d438dc58f0d9d,
+        0xe0a77c19a07df2f666ea36f7879462c,
+    ],
+    0x9ede7d651eca6ac987d20782e4866389,
+    [
+        0xeb2022850278edf8ed84884a014afa37,
+        0x2e67157159e5c639cf63e9cfb74492d9,
+    ]
 );
 
 lazy_static::lazy_static! {
