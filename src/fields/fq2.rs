@@ -117,6 +117,12 @@ impl FieldElement for Fq2 {
         self.c0.is_zero() && self.c1.is_zero()
     }
 
+    #[cfg(all(target_os = "zkvm", target_arch = "riscv32"))]
+    fn squared(&self) -> Self {
+        *self * *self
+    }
+
+    #[cfg(not(all(target_os = "zkvm", target_arch = "riscv32")))]
     fn squared(&self) -> Self {
         // Devegili OhEig Scott Dahab
         //     Multiplication and Squaring on Pairing-Friendly Fields.pdf
@@ -367,4 +373,20 @@ fn r0_from_mont_le_slice() {
     }
     assert_eq!(Fq2::one(), Fq2::from_mont_le_slice(&mont_one_fq2_bytes));
     assert_eq!(Fq2::i(), Fq2::from_mont_le_slice(&mont_i_fq2_bytes));
+}
+
+#[test]
+fn r0_squared_eq_mul() {
+    use rand::{rngs::StdRng, SeedableRng};
+    let seed = [
+        11, 0, 0, 0, 0, 0, 64, 13, //
+        0, 0, 0, 0, 0, 0, 176, 2, //
+        0, 0, 0, 0, 0, 0, 0, 13, //
+        0, 0, 0, 0, 0, 0, 96, 7u8, //
+    ];
+    let mut rng = StdRng::from_seed(seed);
+    for _ in 0..1000 {
+        let x = Fq2::random(&mut rng);
+        assert_eq!(x.squared(), x * x);
+    }
 }
